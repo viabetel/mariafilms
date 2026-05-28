@@ -12,15 +12,107 @@ export function ScrollytellingCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Ref to hold frames for the animation loop
-  const framesRef = useRef<ImageBitmap[]>([]);
+  // Ref to hold image elements for the animation loop
+  const framesRef = useRef<HTMLImageElement[]>([]);
   // Store target and current frame for interpolation (lerp)
   const animRef = useRef({
     currentFrame: 0,
     targetFrame: 0,
   });
+  const isAnimatingRef = useRef(false);
 
-  // Pre-load static frames on mount
+  // Helper to draw image cover
+  const drawImageCover = (
+    ctx: CanvasRenderingContext2D,
+    img: HTMLImageElement
+  ) => {
+    const w = ctx.canvas.width;
+    const h = ctx.canvas.height;
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    if (iw === 0 || ih === 0) return;
+    
+    ctx.clearRect(0, 0, w, h);
+    
+    const isPortrait = w < h;
+    
+    if (isPortrait) {
+      // Lógica intermediária para mobile: garante que a altura seja pelo menos 55% da tela,
+      // evitando o corte agressivo do "cover" e a miniatura do "contain".
+      const scale = Math.max(w / iw, (h * 0.55) / ih);
+      const dw = iw * scale;
+      const dh = ih * scale;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2;
+      
+      ctx.drawImage(img, 0, 0, iw, ih, dx, dy, dw, dh);
+    } else {
+      // Lógica de "cover" com zoom-out para desktop
+      const r = Math.max(w / iw, h / ih);
+      
+      const cx = (iw - w / r) / 2;
+      const cy = (ih - h / r) / 2;
+      const cw = w / r;
+      const ch = h / r;
+      
+      const zoomOutFactor = 0.72;
+      const dw = w * zoomOutFactor;
+      const dh = h * zoomOutFactor;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2;
+      
+      ctx.drawImage(img, cx, cy, cw, ch, dx, dy, dw, dh);
+    }
+  };
+
+  // Start the animation loop when scroll updates
+  const startAnimating = () => {
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
+    
+    const render = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        isAnimatingRef.current = false;
+        return;
+      }
+
+      const ctx = canvas.getContext('2d');
+      const frameList = framesRef.current;
+
+      if (ctx && frameList.length > 0) {
+        const diff = animRef.current.targetFrame - animRef.current.currentFrame;
+        
+        // Easing interpolation (0.08 catchup)
+        animRef.current.currentFrame += diff * 0.08;
+
+        const frameIndex = Math.max(
+          0,
+          Math.min(frameList.length - 1, Math.round(animRef.current.currentFrame))
+        );
+
+        const currentImg = frameList[frameIndex];
+        if (currentImg && currentImg.complete && currentImg.naturalWidth > 0) {
+          drawImageCover(ctx, currentImg);
+        }
+
+        // If not caught up yet, keep animating
+        if (Math.abs(diff) > 0.05) {
+          requestAnimationFrame(render);
+        } else {
+          // Snap and stop loop to save CPU/GPU cycles
+          animRef.current.currentFrame = animRef.current.targetFrame;
+          isAnimatingRef.current = false;
+        }
+      } else {
+        isAnimatingRef.current = false;
+      }
+    };
+
+    requestAnimationFrame(render);
+  };
+
+  // Pre-load static frames on mount (as lightweight HTMLImageElements)
   useEffect(() => {
     let active = true;
 
@@ -31,8 +123,9 @@ export function ScrollytellingCanvas({
         let loadedCount = 0;
 
         const loadFile = async (index: number) => {
-          const i = index + 1;
-          const numStr = String(i).padStart(3, '0');
+          // Map index (0 to frameCount-1) uniformly across 259 frames (1 to 259)
+          const frameIndex = Math.min(259, Math.round((index / (frameCount - 1)) * 258) + 1);
+          const numStr = String(frameIndex).padStart(3, '0');
           const imgUrl = `/frames/frame_${numStr}.webp`;
 
           const img = new Image();
@@ -41,27 +134,20 @@ export function ScrollytellingCanvas({
           await new Promise<void>((resolve) => {
             img.onload = () => resolve();
             img.onerror = () => {
-              console.warn(`falha ao carregar frame ${i}`);
-              resolve(); // Resolve anyway to avoid blocking the queue
+              console.warn(`falha ao carregar frame ${frameIndex}`);
+              resolve(); // Resolve anyway
             };
           });
 
           if (!active) return;
 
-          // Only create bitmap if image loaded successfully
           if (img.complete && img.naturalWidth > 0) {
-            try {
-              const bitmap = await createImageBitmap(img);
-              results[index] = bitmap;
-            } catch (bitmapErr) {
-              console.warn(`falha ao criar bitmap para o frame ${i}`, bitmapErr);
-            }
+            results[index] = img;
           }
-
           loadedCount++;
         };
 
-        // Create workers that pull indexes from a shared queue
+        // Worker queue
         const indices = [...Array(frameCount).keys()];
         const worker = async () => {
           while (indices.length > 0 && active) {
@@ -70,12 +156,15 @@ export function ScrollytellingCanvas({
           }
         };
 
-        // Start all workers in parallel
+        // Run in parallel
         await Promise.all(Array(concurrency).fill(null).map(worker));
 
         if (active) {
-          // Keep only successfully loaded bitmaps
-          framesRef.current = results.filter((b): b is ImageBitmap => !!b);
+          framesRef.current = results.filter((b): b is HTMLImageElement => !!b);
+          // Draw initial frame once loaded
+          setTimeout(() => {
+            startAnimating();
+          }, 50);
         }
       } catch (err) {
         console.error('erro ao carregar frames estáticos:', err);
@@ -89,109 +178,19 @@ export function ScrollytellingCanvas({
 
     return () => {
       active = false;
-      // Clean up bitmaps
-      framesRef.current.forEach((bitmap) => bitmap.close());
+      framesRef.current = [];
     };
   }, [frameCount]);
 
   // Update target frame when scrollProgress changes
   useEffect(() => {
-    let target;
-    if (scrollProgress <= 0.5) {
-      // 0.0 -> 0.5 maps to 0 -> frameCount - 1
-      target = (scrollProgress / 0.5) * (frameCount - 1);
-    } else {
-      // 0.5 -> 1.0 maps to frameCount - 1 -> 0
-      target = ((1.0 - scrollProgress) / 0.5) * (frameCount - 1);
-    }
+    const target = scrollProgress * (frameCount - 1);
     animRef.current.targetFrame = target;
+    
+    startAnimating();
   }, [scrollProgress, frameCount]);
 
-  // Animate and draw loop
-  useEffect(() => {
-    let animationFrameId: number;
-    
-    const drawImageCover = (
-      ctx: CanvasRenderingContext2D,
-      img: ImageBitmap
-    ) => {
-      const w = ctx.canvas.width;
-      const h = ctx.canvas.height;
-      const iw = img.width;
-      const ih = img.height;
-      
-      ctx.clearRect(0, 0, w, h);
-      
-      const isPortrait = w < h;
-      
-      if (isPortrait) {
-        // Lógica intermediária para mobile: garante que a altura seja pelo menos 50% da tela,
-        // evitando o corte agressivo do "cover" e a miniatura do "contain".
-        const scale = Math.max(w / iw, (h * 0.55) / ih);
-        const dw = iw * scale;
-        const dh = ih * scale;
-        const dx = (w - dw) / 2;
-        const dy = (h - dh) / 2;
-        
-        ctx.drawImage(img, 0, 0, iw, ih, dx, dy, dw, dh);
-      } else {
-        // Lógica de "cover" com zoom-out para desktop
-        const r = Math.max(w / iw, h / ih);
-        
-        const cx = (iw - w / r) / 2;
-        const cy = (ih - h / r) / 2;
-        const cw = w / r;
-        const ch = h / r;
-        
-        const zoomOutFactor = 0.72;
-        const dw = w * zoomOutFactor;
-        const dh = h * zoomOutFactor;
-        const dx = (w - dw) / 2;
-        const dy = (h - dh) / 2;
-        
-        ctx.drawImage(img, cx, cy, cw, ch, dx, dy, dw, dh);
-      }
-    };
-
-    const render = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        animationFrameId = requestAnimationFrame(render);
-        return;
-      }
-
-      const ctx = canvas.getContext('2d');
-      const frameList = framesRef.current;
-
-      if (ctx && frameList.length > 0) {
-        // Smoothly interpolate current frame index towards the target
-        const diff = animRef.current.targetFrame - animRef.current.currentFrame;
-        // 0.08 creates a premium, slow-catching easing effect
-        animRef.current.currentFrame += diff * 0.08;
-
-        // Clamp the frame index
-        const frameIndex = Math.max(
-          0,
-          Math.min(frameList.length - 1, Math.round(animRef.current.currentFrame))
-        );
-
-        const currentImg = frameList[frameIndex];
-        if (currentImg) {
-          drawImageCover(ctx, currentImg);
-        }
-      }
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
-  // Handle canvas sizing
+  // Handle canvas sizing and resizing
   useEffect(() => {
     const handleResize = () => {
       const canvas = canvasRef.current;
@@ -199,6 +198,8 @@ export function ScrollytellingCanvas({
       
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      
+      startAnimating();
     };
 
     window.addEventListener('resize', handleResize);
@@ -209,7 +210,7 @@ export function ScrollytellingCanvas({
     };
   }, []);
 
-  // Fallback rendering se houver erro ao carregar frames
+  // Fallback wireframe rendering in case of error
   if (error) {
     return (
       <div className="absolute inset-0 w-full h-full bg-black flex flex-col items-center justify-center overflow-hidden">

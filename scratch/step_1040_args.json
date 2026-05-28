@@ -1,0 +1,12 @@
+{
+  "AllowMultiple": "false",
+  "Description": "\"Enable CSS Scroll Snapping and smooth scrolling on the html element in index.css.\"",
+  "EndLine": "20",
+  "Instruction": "\"Add scroll-snap-type and scroll-behavior to the html element.\"",
+  "ReplacementContent": "\"@layer base {\\n  html {\\n    scroll-snap-type: y mandatory;\\n    scroll-behavior: smooth;\\n  }\\n\\n  html,\\n  body,\\n  #root {\\n    height: 100%;\\n  }\\n\\n  body {\\n    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;\\n    background-color: #000000;\\n    color: #ffffff;\\n    -webkit-font-smoothing: antialiased;\\n    -moz-osx-font-smoothing: grayscale;\\n    margin: 0;\\n  }\\n}\"",
+  "StartLine": "5",
+  "TargetContent": "\"@layer base {\\n  html,\\n  body,\\n  #root {\\n    height: 100%;\\n  }\\n\\n  body {\\n    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;\\n    background-color: #000000;\\n    color: #ffffff;\\n    -webkit-font-smoothing: antialiased;\\n    -moz-osx-font-smoothing: grayscale;\\n    margin: 0;\\n  }\\n}\"",
+  "TargetFile": "\"c:\\\\Users\\\\Nicácio\\\\Documents\\\\GitHub\\\\mariafilms\\\\src\\\\index.css\"",
+  "toolAction": "\"Configuring scroll snapping in index.css\"",
+  "toolSummary": "\"Modify file\""
+}

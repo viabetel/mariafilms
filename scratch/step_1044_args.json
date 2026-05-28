@@ -1,0 +1,12 @@
+{
+  "AllowMultiple": "false",
+  "Description": "\"Add snap-start snap-always to PortfolioSection container to enable correct scroll snap integration.\"",
+  "EndLine": "45",
+  "Instruction": "\"Add snap-start and snap-always classes to the main section tag.\"",
+  "ReplacementContent": "\"export function PortfolioSection() {\\n  return (\\n    <section className=\\\"relative bg-black w-full py-16 md:py-24 px-4 md:px-10 flex flex-col gap-8 md:gap-12 z-20 snap-start snap-always\\\">\"",
+  "StartLine": "41",
+  "TargetContent": "\"export function PortfolioSection() {\\n  return (\\n    <section className=\\\"relative bg-black w-full py-16 md:py-24 px-4 md:px-10 flex flex-col gap-8 md:gap-12 z-20\\\">\"",
+  "TargetFile": "\"c:\\\\Users\\\\Nicácio\\\\Documents\\\\GitHub\\\\mariafilms\\\\src\\\\components\\\\PortfolioSection.tsx\"",
+  "toolAction": "\"Adding scroll snapping to PortfolioSection\"",
+  "toolSummary": "\"Modify file\""
+}
