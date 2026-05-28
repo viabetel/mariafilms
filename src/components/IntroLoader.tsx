@@ -117,13 +117,13 @@ export function IntroLoader({ onComplete }: IntroLoaderProps) {
       </div>
 
       {/* HUD Canto Superior Direito: Metadados técnicos do vídeo */}
-      <div className="absolute top-8 right-8 flex flex-col items-end text-white/40 font-mono text-[9px] tracking-wider z-20 select-none">
+      <div className="absolute top-8 right-8 flex flex-col items-end text-white/40 font-display-tech text-[9px] tracking-wider z-20 select-none">
         <span>4K RAW // H.265</span>
         <span className="text-[#ff007f] font-semibold mt-0.5">24.00 FPS</span>
       </div>
 
       {/* HUD Canto Inferior Esquerdo: Shutter / ISO / Temperatura */}
-      <div className="absolute bottom-8 left-8 flex flex-col items-start text-white/40 font-mono text-[9px] tracking-wider z-20 select-none">
+      <div className="absolute bottom-8 left-8 flex flex-col items-start text-white/40 font-display-tech text-[9px] tracking-wider z-20 select-none">
         <span>SHUTTER 1/48</span>
         <span>ISO 800</span>
         <span>WB 5600K</span>
@@ -141,7 +141,7 @@ export function IntroLoader({ onComplete }: IntroLoaderProps) {
         </div>
 
         {/* Célula de Bateria */}
-        <div className="flex items-center gap-1.5 text-white/30 font-mono text-[9px]">
+        <div className="flex items-center gap-1.5 text-white/30 font-display-tech text-[9px]">
           <span>BAT 98%</span>
           <div className="w-5 h-2.5 border border-white/20 rounded-[2px] p-[1.5px] flex items-center">
             <div className="h-full bg-white/40 rounded-[0.5px] w-[90%]" />

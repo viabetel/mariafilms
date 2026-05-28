@@ -15,6 +15,7 @@ function App() {
   const [heroBtn1Hover, setHeroBtn1Hover] = useState(false);
   const [heroBtn2Hover, setHeroBtn2Hover] = useState(false);
   const [heroScroll, setHeroScroll] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Monitoramento da rolagem do Hero (de 0 a 100vh)
   useEffect(() => {
@@ -27,6 +28,16 @@ function App() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Monitoramento do tamanho da tela para comportamento mobile responsivo
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Processamento dinâmico para remover o fundo escuro do logotipo
@@ -71,12 +82,14 @@ function App() {
       {!loaderComplete && <IntroLoader onComplete={() => setLoaderComplete(true)} />}
 
       {/* Persistent Navbar overlay - Transparent Premium Glassmorphism & Neon details */}
-      <nav className="fixed z-30 px-6 md:px-10 pt-6 top-0 left-0 right-0 flex items-center justify-between gap-4 pointer-events-none">
+      <nav className={`fixed z-30 px-4 md:px-10 pt-4 md:pt-6 top-0 left-0 right-0 flex items-center justify-between gap-4 pointer-events-none`}>
         {/* Logotipo transparente no cabeçalho com efeito de vidro */}
         <div 
           onMouseEnter={() => setLogoHover(true)}
           onMouseLeave={() => setLogoHover(false)}
-          className="flex items-center justify-center rounded-full px-6 py-3.5 min-h-[72px] border transition-all duration-300 pointer-events-auto"
+          className={`flex items-center justify-center rounded-full transition-all duration-300 pointer-events-auto border ${
+            isMobile ? 'px-4 py-2 min-h-[48px]' : 'px-6 py-3.5 min-h-[72px]'
+          }`}
           style={{
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
             backdropFilter: 'blur(24px)',
@@ -89,10 +102,10 @@ function App() {
             <img 
               src={logoUrl} 
               alt="maria eduarda logo" 
-              className="h-14 w-auto select-none filter drop-shadow-[0_2px_10px_rgba(255,255,255,0.25)]" 
+              className={`${isMobile ? 'h-8' : 'h-14'} w-auto select-none filter drop-shadow-[0_2px_10px_rgba(255,255,255,0.25)]`} 
             />
           ) : (
-            <span className="text-white text-sm font-normal tracking-tight py-1 px-3">maria films</span>
+            <span className="text-white text-xs md:text-sm font-normal tracking-tight py-1 px-3">maria films</span>
           )}
         </div>
 
@@ -137,7 +150,9 @@ function App() {
         <button 
           onMouseEnter={() => setBtnHover(true)}
           onMouseLeave={() => setBtnHover(false)}
-          className="rounded-full px-8 py-4 font-medium transition-all duration-300 pointer-events-auto border hover:scale-102"
+          className={`rounded-full font-medium transition-all duration-300 pointer-events-auto border hover:scale-102 ${
+            isMobile ? 'px-5 py-2.5 text-xs' : 'px-8 py-4 text-base'
+          }`}
           style={{
             backgroundColor: btnHover ? 'rgba(255, 0, 127, 0.2)' : 'rgba(255, 255, 255, 0.06)',
             color: '#ffffff',
@@ -164,8 +179,8 @@ function App() {
             <div 
               className="absolute inset-y-0 right-0 w-full md:w-[50%] h-full flex items-center justify-center md:justify-end pointer-events-none z-0"
               style={{
-                opacity: (0.9 - heroScroll * 1.5) * (1 - heroScroll),
-                transform: `scale(${1 - heroScroll * 0.05}) translateY(${heroScroll * 30}px)`,
+                opacity: (isMobile ? 0.35 : 0.9 - heroScroll * 1.5) * (1 - heroScroll),
+                transform: `scale(${1 - heroScroll * 0.05}) translateY(${heroScroll * (isMobile ? 15 : 30)}px)`,
                 transition: 'opacity 0.05s ease-out, transform 0.05s ease-out',
               }}
             >
@@ -187,7 +202,7 @@ function App() {
               className="relative z-10 container mx-auto px-6 md:px-12 w-full flex flex-col md:flex-row items-center gap-12 min-h-[80vh]"
               style={{
                 opacity: 1 - heroScroll * 2,
-                transform: `translateY(-${heroScroll * 80}px)`,
+                transform: `translateY(-${heroScroll * (isMobile ? 40 : 80)}px)`,
                 transition: 'opacity 0.05s ease-out, transform 0.05s ease-out',
               }}
             >
@@ -369,10 +384,10 @@ function App() {
               className="absolute transition-all duration-300 ease-out flex flex-col items-center text-center px-6"
               style={{
                 opacity: progress > 0.05 && progress < 0.35 ? 1 : 0,
-                transform: `translateY(${(0.2 - progress) * 150}px)`,
+                transform: `translateY(${(0.2 - progress) * (isMobile ? 60 : 150)}px)`,
               }}
             >
-              <span className="text-neutral-500 text-xs uppercase tracking-[0.2em] mb-3 block font-mono">01 // visão</span>
+              <span className="text-neutral-500 text-[10px] uppercase tracking-[0.3em] mb-3 block font-display-tech font-semibold">01 // visão</span>
               <h2 className="hero-title text-white font-medium text-[8vw] md:text-[6vw] tracking-tight leading-none lowercase">
                 narrativas cinematográficas
               </h2>
@@ -386,10 +401,10 @@ function App() {
               className="absolute transition-all duration-300 ease-out flex flex-col items-center text-center px-6"
               style={{
                 opacity: progress >= 0.35 && progress < 0.65 ? 1 : 0,
-                transform: `translateY(${(0.5 - progress) * 150}px)`,
+                transform: `translateY(${(0.5 - progress) * (isMobile ? 60 : 150)}px)`,
               }}
             >
-              <span className="text-neutral-500 text-xs uppercase tracking-[0.2em] mb-3 block font-mono">02 // produção</span>
+              <span className="text-neutral-500 text-[10px] uppercase tracking-[0.3em] mb-3 block font-display-tech font-semibold">02 // produção</span>
               <h2 className="hero-title text-white font-medium text-[8vw] md:text-[6vw] tracking-tight leading-none lowercase">
                 direção criativa
               </h2>
@@ -403,10 +418,10 @@ function App() {
               className="absolute transition-all duration-300 ease-out flex flex-col items-center text-center px-6"
               style={{
                 opacity: progress >= 0.65 && progress < 0.95 ? 1 : 0,
-                transform: `translateY(${(0.8 - progress) * 150}px)`,
+                transform: `translateY(${(0.8 - progress) * (isMobile ? 60 : 150)}px)`,
               }}
             >
-              <span className="text-neutral-500 text-xs uppercase tracking-[0.2em] mb-3 block font-mono">03 // execução</span>
+              <span className="text-neutral-500 text-[10px] uppercase tracking-[0.3em] mb-3 block font-display-tech font-semibold">03 // execução</span>
               <h2 className="hero-title text-white font-medium text-[8vw] md:text-[6vw] tracking-tight leading-none lowercase">
                 pós-produção
               </h2>
@@ -418,15 +433,15 @@ function App() {
 
           {/* Indicador de progresso do Scroll com percentual em tempo real (em rosa choque) */}
           <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex items-center gap-4 z-20">
-            <span className="text-[10px] text-neutral-500 tracking-wider font-mono">01</span>
+            <span className="text-[10px] text-neutral-500 tracking-wider font-display-tech">01</span>
             <div className="h-[2px] w-24 bg-neutral-900 relative rounded-full overflow-hidden">
               <div
                 className="absolute left-0 top-0 h-full bg-[#ff007f] transition-all duration-75"
                 style={{ width: `${progress * 100}%` }}
               />
             </div>
-            <span className="text-[10px] text-neutral-500 tracking-wider font-mono">03</span>
-            <span className="text-[10px] text-neutral-400 font-mono tracking-widest ml-1 opacity-80">
+            <span className="text-[10px] text-neutral-500 tracking-wider font-display-tech">03</span>
+            <span className="text-[10px] text-neutral-400 font-display-tech tracking-widest ml-1 opacity-80">
               ({Math.round(progress * 100)}%)
             </span>
           </div>

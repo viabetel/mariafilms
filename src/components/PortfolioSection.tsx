@@ -40,21 +40,21 @@ const projects: ProjectItem[] = [
 
 export function PortfolioSection() {
   return (
-    <section className="relative bg-black w-full py-24 px-6 md:px-10 flex flex-col gap-12 z-20">
+    <section className="relative bg-black w-full py-16 md:py-24 px-4 md:px-10 flex flex-col gap-8 md:gap-12 z-20">
       {/* Section Header */}
       <div className="flex flex-col gap-2">
-        <span className="text-neutral-500 text-xs uppercase tracking-widest">portfólio selecionado</span>
+        <span className="text-neutral-500 text-[10px] uppercase tracking-[0.3em] font-display-tech font-semibold">portfólio selecionado</span>
         <h2 className="hero-title text-white font-medium text-[8vw] md:text-[5vw] leading-none lowercase">
           trabalhos recentes
         </h2>
       </div>
 
       {/* Expanding Accordion Panels */}
-      <div className="flex flex-col md:flex-row h-[120vh] md:h-[65vh] gap-4 w-full">
+      <div className="flex flex-col md:flex-row md:h-[65vh] gap-3 md:gap-4 w-full">
         {projects.map((project) => (
           <div
             key={project.id}
-            className="group flex-1 h-full overflow-hidden relative rounded-2xl transition-all duration-700 ease-in-out cursor-pointer hover:flex-[2.5] md:hover:flex-[3.5] bg-neutral-900 border border-white/5"
+            className="group flex-1 min-h-[220px] md:min-h-0 h-full overflow-hidden relative rounded-2xl transition-all duration-700 ease-in-out cursor-pointer hover:flex-[2.5] md:hover:flex-[3.5] bg-neutral-900 border border-white/5"
           >
             {/* Background Image with Hover Transition */}
             <img
@@ -70,7 +70,7 @@ export function PortfolioSection() {
             <div className="absolute inset-0 p-6 flex flex-col justify-between z-10">
               {/* Top part: Number and Hover Play Button */}
               <div className="flex justify-between items-start">
-                <span className="text-white/30 text-xs font-normal tracking-wider uppercase">
+                <span className="text-white/30 text-[10px] font-normal tracking-wider uppercase font-display-tech">
                   {project.num}
                 </span>
                 
@@ -95,7 +95,7 @@ export function PortfolioSection() {
 
               {/* Bottom part: Labels and Expanding Descriptions */}
               <div className="flex flex-col gap-1">
-                <span className="text-neutral-400 text-xs uppercase tracking-widest">
+                <span className="text-neutral-400 text-[10px] uppercase tracking-widest font-display-tech">
                   {project.category}
                 </span>
                 <h3 className="hero-title text-white text-2xl md:text-3xl font-medium tracking-tight leading-none lowercase">
@@ -103,12 +103,12 @@ export function PortfolioSection() {
                 </h3>
                 
                 {/* Expanding Description */}
-                <p className="text-neutral-400 text-xs md:text-sm max-w-md mt-2 leading-relaxed opacity-0 max-h-0 overflow-hidden transition-all duration-500 ease-in-out group-hover:opacity-100 group-hover:max-h-20 lowercase">
+                <p className="text-neutral-400 text-xs md:text-sm max-w-md mt-2 leading-relaxed opacity-100 md:opacity-0 max-h-20 md:max-h-0 overflow-hidden transition-all duration-500 ease-in-out md:group-hover:opacity-100 md:group-hover:max-h-20 lowercase">
                   {project.description}
                 </p>
 
                 {/* Meta details revealed on hover */}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 opacity-0 max-h-0 overflow-hidden transition-all duration-700 ease-in-out group-hover:opacity-70 group-hover:max-h-16 text-[10px] font-mono text-neutral-400 border-t border-white/10 pt-2">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 opacity-70 md:opacity-0 max-h-16 md:max-h-0 overflow-hidden transition-all duration-700 ease-in-out md:group-hover:opacity-70 md:group-hover:max-h-16 text-[10px] font-display-tech text-neutral-400 border-t border-white/10 pt-2">
                   {project.details.map((detail, idx) => (
                     <span key={idx} className="lowercase">
                       {detail}

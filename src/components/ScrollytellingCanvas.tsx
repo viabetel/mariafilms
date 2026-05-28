@@ -120,23 +120,36 @@ export function ScrollytellingCanvas({
       const iw = img.width;
       const ih = img.height;
       
-      const r = Math.max(w / iw, h / ih);
-      
-      const cx = (iw - w / r) / 2;
-      const cy = (ih - h / r) / 2;
-      const cw = w / r;
-      const ch = h / r;
-      
       ctx.clearRect(0, 0, w, h);
       
-      // Scale down drawing of the camera to zoom it out and increase quality
-      const zoomOutFactor = 0.72;
-      const dw = w * zoomOutFactor;
-      const dh = h * zoomOutFactor;
-      const dx = (w - dw) / 2;
-      const dy = (h - dh) / 2;
+      const isPortrait = w < h;
       
-      ctx.drawImage(img, cx, cy, cw, ch, dx, dy, dw, dh);
+      if (isPortrait) {
+        // Lógica de "contain" para mobile: ajusta pela largura da tela sem cortar as laterais
+        const scale = (w * 0.94) / iw;
+        const dw = w * 0.94;
+        const dh = ih * scale;
+        const dx = (w - dw) / 2;
+        const dy = (h - dh) / 2;
+        
+        ctx.drawImage(img, 0, 0, iw, ih, dx, dy, dw, dh);
+      } else {
+        // Lógica de "cover" com zoom-out para desktop
+        const r = Math.max(w / iw, h / ih);
+        
+        const cx = (iw - w / r) / 2;
+        const cy = (ih - h / r) / 2;
+        const cw = w / r;
+        const ch = h / r;
+        
+        const zoomOutFactor = 0.72;
+        const dw = w * zoomOutFactor;
+        const dh = h * zoomOutFactor;
+        const dx = (w - dw) / 2;
+        const dy = (h - dh) / 2;
+        
+        ctx.drawImage(img, cx, cy, cw, ch, dx, dy, dw, dh);
+      }
     };
 
     const render = () => {
@@ -219,7 +232,7 @@ export function ScrollytellingCanvas({
         </div>
 
         <div className="absolute bottom-24 text-center">
-          <span className="text-[10px] tracking-widest text-neutral-500 uppercase font-mono">
+          <span className="text-[10px] tracking-widest text-neutral-500 uppercase font-display-tech">
             [ rotação de câmera (fallback wireframe) ]
           </span>
         </div>

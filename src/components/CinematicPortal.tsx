@@ -1,27 +1,37 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 
 export function CinematicPortal() {
   const portalRef = useRef<HTMLDivElement>(null);
   const progress = useScrollProgress(portalRef);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Map progress to clip-path circle radius (in vw)
-  // Starts at 12vw, expands to 150vw after progress passes 0.15
-  const radius = progress < 0.15 
+  // Starts at 12vw, expands to 150vw after progress passes 0.12
+  const radius = progress < 0.12 
     ? 12 
-    : 12 + Math.pow((progress - 0.15) / 0.85, 1.8) * 138;
+    : 12 + Math.pow((progress - 0.12) / 0.88, 1.8) * 138;
 
   // Map progress to lens scale and rotation
-  const lensScale = progress < 0.15 
+  const lensScale = progress < 0.12 
     ? 1 
-    : 1 + Math.pow((progress - 0.15) / 0.85, 1.8) * 11.5;
+    : 1 + Math.pow((progress - 0.12) / 0.88, 1.8) * 11.5;
   const lensRotate = progress * 480;
 
   // Cinematic text animation helpers
-  // Step 1: "a essência da cena / está na verdade / do movimento" (centered at 0.28)
+  // Step 1: "a essência da cena / está na verdade / do movimento" (centered at 0.22)
   const getStep1Style = () => {
-    const center = 0.28;
-    const range = 0.15;
+    const center = 0.22;
+    const range = 0.10;
     const diff = progress - center;
     const isActive = Math.abs(diff) < range && progress < 0.82;
     const opacity = isActive ? 1 - Math.pow(Math.abs(diff) / range, 2) : 0;
@@ -34,10 +44,10 @@ export function CinematicPortal() {
     };
   };
 
-  // Step 2: "cada corte é um / instante esculpido / no tempo" (centered at 0.50)
+  // Step 2: "cada corte é um / instante esculpido / no tempo" (centered at 0.45)
   const getStep2Style = () => {
-    const center = 0.50;
-    const range = 0.15;
+    const center = 0.45;
+    const range = 0.10;
     const diff = progress - center;
     const isActive = Math.abs(diff) < range && progress < 0.82;
     const opacity = isActive ? 1 - Math.pow(Math.abs(diff) / range, 2) : 0;
@@ -50,10 +60,10 @@ export function CinematicPortal() {
     };
   };
 
-  // Step 3: "direção que dá / alma e ritmo / às imagens" (centered at 0.72)
+  // Step 3: "direção que dá / alma e ritmo / às imagens" (centered at 0.68)
   const getStep3Style = () => {
-    const center = 0.72;
-    const range = 0.15;
+    const center = 0.68;
+    const range = 0.10;
     const diff = progress - center;
     const isActive = Math.abs(diff) < range && progress < 0.82;
     const opacity = isActive ? 1 - Math.pow(Math.abs(diff) / range, 2) : 0;
@@ -70,10 +80,10 @@ export function CinematicPortal() {
   const getStep4Style = () => {
     const start = 0.80;
     const isActive = progress > start;
-    // Smooth transition from 0 to 1 between progress 0.80 and 0.95
-    const opacity = isActive ? Math.min(1, (progress - start) / 0.15) : 0;
-    const blur = isActive ? Math.max(0, 15 - ((progress - start) / 0.15) * 15) : 15;
-    const translateY = isActive ? Math.max(0, 50 - ((progress - start) / 0.15) * 50) : 50;
+    // Smooth transition from 0 to 1 between progress 0.80 and 0.93
+    const opacity = isActive ? Math.min(1, (progress - start) / 0.13) : 0;
+    const blur = isActive ? Math.max(0, 15 - ((progress - start) / 0.13) * 15) : 15;
+    const translateY = isActive ? Math.max(0, 50 - ((progress - start) / 0.13) * 50) : 50;
 
     return {
       opacity,
@@ -84,7 +94,7 @@ export function CinematicPortal() {
   };
 
   return (
-    <section ref={portalRef} className="relative h-[250vh] bg-black z-25">
+    <section ref={portalRef} className="relative h-[450vh] bg-black z-25">
       {/* Sticky viewport container */}
       <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center bg-black">
         {/* Background mechanical lines grid */}
@@ -144,28 +154,28 @@ export function CinematicPortal() {
             style={getStep1Style()}
             className="absolute flex-col items-center text-center px-6 transition-all duration-300 ease-out"
           >
-            <span className="text-neutral-400/60 text-xs uppercase tracking-[0.3em] mb-4 block font-mono">
+            <span className="text-neutral-400/60 text-[10px] tracking-[0.35em] uppercase mb-4 block font-display-tech font-semibold">
               [ manifesto // parte i ]
             </span>
             <div 
-              className="text-[6vw] md:text-[5vw] text-white font-extrabold tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
-              style={{ transform: `translateX(${(0.28 - progress) * 150}px)` }}
+              className="text-[8vw] md:text-[5vw] text-white font-extrabold tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
+              style={{ transform: `translateX(${(0.22 - progress) * (isMobile ? 35 : 150)}px)` }}
             >
               a essência da cena
             </div>
             <div 
-              className="text-[9vw] md:text-[7vw] font-black tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
+              className="text-[11vw] md:text-[7vw] font-black tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
               style={{
                 WebkitTextStroke: '1.5px rgba(255, 255, 255, 0.8)',
                 color: 'transparent',
-                transform: `scale(${1 + Math.abs(progress - 0.28) * 0.5})`,
+                transform: `scale(${1 + Math.abs(progress - 0.22) * (isMobile ? 0.25 : 0.5)})`,
               }}
             >
               está na verdade
             </div>
             <div 
-              className="text-[7vw] md:text-[6vw] text-white font-extrabold tracking-tighter leading-none lowercase transition-transform duration-300"
-              style={{ transform: `translateX(${(progress - 0.28) * 150}px)` }}
+              className="text-[9vw] md:text-[6vw] text-white font-extrabold tracking-tighter leading-none lowercase transition-transform duration-300"
+              style={{ transform: `translateX(${(progress - 0.22) * (isMobile ? 35 : 150)}px)` }}
             >
               do movimento
             </div>
@@ -176,28 +186,28 @@ export function CinematicPortal() {
             style={getStep2Style()}
             className="absolute flex-col items-center text-center px-6 transition-all duration-300 ease-out"
           >
-            <span className="text-neutral-400/60 text-xs uppercase tracking-[0.3em] mb-4 block font-mono">
+            <span className="text-neutral-400/60 text-[10px] tracking-[0.35em] uppercase mb-4 block font-display-tech font-semibold">
               [ manifesto // parte ii ]
             </span>
             <div 
-              className="text-[7vw] md:text-[6vw] text-white font-extrabold tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
-              style={{ transform: `translateX(${(0.50 - progress) * 180}px)` }}
+              className="text-[9vw] md:text-[6vw] text-white font-extrabold tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
+              style={{ transform: `translateX(${(0.45 - progress) * (isMobile ? 35 : 180)}px)` }}
             >
               cada corte é um
             </div>
             <div 
-              className="text-[8vw] md:text-[6.5vw] font-black tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
+              className="text-[11vw] md:text-[6.5vw] font-black tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
               style={{
                 WebkitTextStroke: '1.5px rgba(255, 255, 255, 0.8)',
                 color: 'transparent',
-                transform: `rotate(${(progress - 0.50) * 15}deg)`,
+                transform: `rotate(${(progress - 0.45) * (isMobile ? 4 : 15)}deg)`,
               }}
             >
               instante esculpido
             </div>
             <div 
-              className="text-[9vw] md:text-[7vw] text-white font-extrabold tracking-tighter leading-none lowercase transition-transform duration-300"
-              style={{ transform: `translateX(${(progress - 0.50) * 180}px)` }}
+              className="text-[12vw] md:text-[7vw] text-white font-extrabold tracking-tighter leading-none lowercase transition-transform duration-300"
+              style={{ transform: `translateX(${(progress - 0.45) * (isMobile ? 35 : 180)}px)` }}
             >
               no tempo
             </div>
@@ -208,28 +218,28 @@ export function CinematicPortal() {
             style={getStep3Style()}
             className="absolute flex-col items-center text-center px-6 transition-all duration-300 ease-out"
           >
-            <span className="text-neutral-400/60 text-xs uppercase tracking-[0.3em] mb-4 block font-mono">
+            <span className="text-neutral-400/60 text-[10px] tracking-[0.35em] uppercase mb-4 block font-display-tech font-semibold">
               [ manifesto // parte iii ]
             </span>
             <div 
-              className="text-[6vw] md:text-[5vw] text-white font-extrabold tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
-              style={{ transform: `translateY(${(0.72 - progress) * 100}px)` }}
+              className="text-[8vw] md:text-[5vw] text-white font-extrabold tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
+              style={{ transform: `translateY(${(0.68 - progress) * (isMobile ? 25 : 100)}px)` }}
             >
               direção que dá
             </div>
             <div 
-              className="text-[9vw] md:text-[7.5vw] font-black tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
+              className="text-[12vw] md:text-[7.5vw] font-black tracking-tighter leading-none lowercase mb-2 transition-transform duration-300"
               style={{
                 WebkitTextStroke: '1.5px rgba(255, 255, 255, 0.8)',
                 color: 'transparent',
-                transform: `scale(${1 - Math.abs(progress - 0.72) * 0.2})`,
+                transform: `scale(${1 - Math.abs(progress - 0.68) * 0.2})`,
               }}
             >
               alma e ritmo
             </div>
             <div 
-              className="text-[8vw] md:text-[6.5vw] text-white font-extrabold tracking-tighter leading-none lowercase transition-transform duration-300"
-              style={{ transform: `translateY(${(progress - 0.72) * 100}px)` }}
+              className="text-[10vw] md:text-[6.5vw] text-white font-extrabold tracking-tighter leading-none lowercase transition-transform duration-300"
+              style={{ transform: `translateY(${(progress - 0.68) * (isMobile ? 25 : 100)}px)` }}
             >
               às imagens
             </div>
@@ -240,7 +250,7 @@ export function CinematicPortal() {
             style={getStep4Style()}
             className="absolute flex-col items-center text-center px-6 transition-all duration-300 ease-out pointer-events-auto"
           >
-            <span className="text-neutral-400/60 text-xs uppercase tracking-[0.3em] mb-4 block font-mono">
+            <span className="text-neutral-400/60 text-[10px] tracking-[0.35em] uppercase mb-4 block font-display-tech font-semibold select-none">
               [ contato // let's create ]
             </span>
             
@@ -281,7 +291,7 @@ export function CinematicPortal() {
                   href="https://instagram.com" 
                   target="_blank" 
                   rel="noreferrer"
-                  className="text-neutral-400 hover:text-[#ff007f] transition-colors text-[10px] tracking-widest uppercase font-mono"
+                  className="text-neutral-400 hover:text-[#ff007f] transition-colors text-[10px] tracking-widest uppercase font-display-tech font-medium"
                 >
                   instagram
                 </a>
@@ -289,7 +299,7 @@ export function CinematicPortal() {
                   href="https://vimeo.com" 
                   target="_blank" 
                   rel="noreferrer"
-                  className="text-neutral-400 hover:text-[#ff007f] transition-colors text-[10px] tracking-widest uppercase font-mono"
+                  className="text-neutral-400 hover:text-[#ff007f] transition-colors text-[10px] tracking-widest uppercase font-display-tech font-medium"
                 >
                   vimeo
                 </a>
@@ -297,7 +307,7 @@ export function CinematicPortal() {
                   href="https://youtube.com" 
                   target="_blank" 
                   rel="noreferrer"
-                  className="text-neutral-400 hover:text-[#ff007f] transition-colors text-[10px] tracking-widest uppercase font-mono"
+                  className="text-neutral-400 hover:text-[#ff007f] transition-colors text-[10px] tracking-widest uppercase font-display-tech font-medium"
                 >
                   youtube
                 </a>
@@ -305,10 +315,10 @@ export function CinematicPortal() {
 
               {/* Clients & Partners Logotypes row */}
               <div className="mt-12 w-full max-w-md border-t border-white/10 pt-8 opacity-40">
-                <span className="text-[9px] uppercase tracking-[0.25em] text-neutral-400 block mb-4 font-mono">
+                <span className="text-[9px] uppercase tracking-[0.25em] text-neutral-400 block mb-4 font-display-tech font-semibold">
                   parceiros & clientes
                 </span>
-                <div className="flex justify-center items-center gap-6 md:gap-8 text-[11px] font-medium tracking-widest text-neutral-300 uppercase font-mono">
+                <div className="flex justify-center items-center gap-6 md:gap-8 text-[11px] font-medium tracking-widest text-neutral-300 uppercase font-display-tech">
                   <span>vogue</span>
                   <span className="text-white/20">•</span>
                   <span>audi</span>
@@ -323,9 +333,55 @@ export function CinematicPortal() {
 
         </div>
 
+        {/* Indicator dots for the 4 stages of CinematicPortal */}
+        <div className="absolute right-4 md:right-8 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 z-30 select-none">
+          {[0, 1, 2, 3].map((idx) => {
+            let active = false;
+            if (idx === 0) active = progress >= 0.08 && progress < 0.33;
+            if (idx === 1) active = progress >= 0.33 && progress < 0.56;
+            if (idx === 2) active = progress >= 0.56 && progress < 0.80;
+            if (idx === 3) active = progress >= 0.80;
+            
+            return (
+              <div 
+                key={idx} 
+                className="flex items-center justify-end gap-2.5 group cursor-pointer pointer-events-auto"
+                onClick={() => {
+                  if (!portalRef.current) return;
+                  const rect = portalRef.current.getBoundingClientRect();
+                  const totalScrollable = rect.height - window.innerHeight;
+                  let targetProgress = 0.22;
+                  if (idx === 1) targetProgress = 0.45;
+                  if (idx === 2) targetProgress = 0.68;
+                  if (idx === 3) targetProgress = 0.88;
+                  
+                  window.scrollTo({
+                    top: window.scrollY + rect.top + targetProgress * totalScrollable,
+                    behavior: 'smooth'
+                  });
+                }}
+              >
+                <span className={`hidden md:inline-block text-[8px] uppercase tracking-widest text-[#ff007f] font-display-tech opacity-0 group-hover:opacity-100 transition-all duration-300 ${active ? 'opacity-100 font-bold' : ''}`}>
+                  {idx === 0 && 'essência'}
+                  {idx === 1 && 'esculpir'}
+                  {idx === 2 && 'ritmo'}
+                  {idx === 3 && 'contato'}
+                </span>
+                <div 
+                  className={`w-2 h-2 rounded-full border transition-all duration-300 ${
+                    active 
+                      ? 'bg-[#ff007f] border-[#ff007f] scale-125 shadow-[0_0_8px_#ff007f]' 
+                      : 'border-white/30 bg-transparent group-hover:border-white/70'
+                  }`}
+                />
+              </div>
+            );
+          })}
+        </div>
+
         {/* HUD metadata detail */}
         <div 
-          className="absolute bottom-10 left-6 md:left-10 flex flex-col gap-1 z-20 font-mono text-[10px] text-neutral-500 uppercase tracking-widest transition-opacity duration-300"
+          className="absolute bottom-10 left-6 md:left-10 flex flex-col gap-1 z-20 font-display-tech text-[10px] text-neutral-500 uppercase tracking-widest transition-opacity duration-300"
           style={{ opacity: progress > 0.85 ? 0 : 1 }}
         >
           <div>focando // lente criativa</div>
