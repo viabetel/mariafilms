@@ -15,7 +15,7 @@ const projects: ProjectItem[] = [
     category: 'cinematografia',
     title: 'filmes autorais',
     description: 'criando universos de ficção imersivos, com foco em desenvolvimento de personagens e estética profunda.',
-    image: '/cinematic_narrative.png',
+    image: '/cinematic_narrative.webp',
     details: ['ano: 2025', 'direção: maria eduarda', 'formato: curta-metragem', 'status: premiado'],
   },
   {
@@ -24,7 +24,7 @@ const projects: ProjectItem[] = [
     category: 'marcas',
     title: 'filmes publicitários',
     description: 'direção de cena e fotografia de alto impacto para marcas, destacando a essência do produto com dinamismo.',
-    image: '/commercial_films.png',
+    image: '/commercial_films.webp',
     details: ['clientes: audi, vogue', 'serviços: dir. de fotografia', 'formato: campanha digital', 'ano: 2026'],
   },
   {
@@ -33,7 +33,7 @@ const projects: ProjectItem[] = [
     category: 'vida real',
     title: 'documentários',
     description: 'capturando a verdade humana com luz natural, focado em emoções reais, texturas e atmosferas autênticas.',
-    image: '/documentary_stories.png',
+    image: '/documentary_stories.webp',
     details: ['ano: 2025', 'produção: independente', 'captação: luz natural', 'áudio: som direto'],
   },
 ];

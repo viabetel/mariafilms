@@ -3,13 +3,33 @@ import { useScrollProgress } from './hooks/useScrollProgress';
 import { ScrollytellingCanvas } from './components/ScrollytellingCanvas';
 import { PortfolioSection } from './components/PortfolioSection';
 import { CinematicPortal } from './components/CinematicPortal';
+import { IntroLoader } from './components/IntroLoader';
 
 function App() {
   const scrollytellingRef = useRef<HTMLDivElement>(null);
   const progress = useScrollProgress(scrollytellingRef);
   const [logoUrl, setLogoUrl] = useState<string>('');
+  const [loaderComplete, setLoaderComplete] = useState(false);
+  const [btnHover, setBtnHover] = useState(false);
+  const [logoHover, setLogoHover] = useState(false);
+  const [heroBtn1Hover, setHeroBtn1Hover] = useState(false);
+  const [heroBtn2Hover, setHeroBtn2Hover] = useState(false);
+  const [heroScroll, setHeroScroll] = useState(0);
 
-  // Processamento dinâmico para remover o fundo off-white do logotipo
+  // Monitoramento da rolagem do Hero (de 0 a 100vh)
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const threshold = window.innerHeight;
+      const progressValue = Math.min(Math.max(scrollY / threshold, 0), 1);
+      setHeroScroll(progressValue);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Processamento dinâmico para remover o fundo escuro do logotipo
   useEffect(() => {
     const img = new Image();
     img.src = '/logo.jpg';
@@ -27,26 +47,13 @@ function App() {
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imgData.data;
 
-      // Identifica a cor do fundo a partir do pixel superior esquerdo
-      const bgR = data[0];
-      const bgG = data[1];
-      const bgB = data[2];
-
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
 
-        const diffR = Math.abs(r - bgR);
-        const diffG = Math.abs(g - bgG);
-        const diffB = Math.abs(b - bgB);
-
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        const diff = max - min;
-
-        // Torna o fundo transparente enquanto preserva detalhes brancos puros (como texto e câmera)
-        if ((diffR < 18 && diffG < 18 && diffB < 18) || (max >= 225 && max <= 251 && diff < 8)) {
+        // Torna o fundo escuro (cinza/preto) completamente transparente
+        if (r < 75 && g < 75 && b < 75) {
           data[i + 3] = 0;
         }
       }
@@ -60,10 +67,24 @@ function App() {
 
   return (
     <>
-      {/* Persistent Navbar overlay - Larger Buttons, Strong Glassmorphism, Hot Pink details */}
-      <nav className="fixed z-30 px-6 md:px-10 pt-6 top-0 left-0 right-0 flex items-center justify-between gap-4">
-        {/* Logotipo transparente no cabeçalho */}
-        <div className="flex items-center bg-white/10 backdrop-blur-2xl rounded-full px-6 py-3.5 min-h-[72px] justify-center border border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.8)] transition-all duration-300 hover:border-[#ff007f]/40">
+      {/* Cinematic intro loader screen */}
+      {!loaderComplete && <IntroLoader onComplete={() => setLoaderComplete(true)} />}
+
+      {/* Persistent Navbar overlay - Transparent Premium Glassmorphism & Neon details */}
+      <nav className="fixed z-30 px-6 md:px-10 pt-6 top-0 left-0 right-0 flex items-center justify-between gap-4 pointer-events-none">
+        {/* Logotipo transparente no cabeçalho com efeito de vidro */}
+        <div 
+          onMouseEnter={() => setLogoHover(true)}
+          onMouseLeave={() => setLogoHover(false)}
+          className="flex items-center justify-center rounded-full px-6 py-3.5 min-h-[72px] border transition-all duration-300 pointer-events-auto"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            borderColor: logoHover ? 'rgba(255, 0, 127, 0.4)' : 'rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+          }}
+        >
           {logoUrl ? (
             <img 
               src={logoUrl} 
@@ -75,8 +96,17 @@ function App() {
           )}
         </div>
 
-        {/* Menu central do header */}
-        <div className="hidden md:flex items-center gap-1 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-3 border border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.6)]">
+        {/* Menu central do header com efeito de vidro */}
+        <div 
+          className="hidden md:flex items-center gap-1 rounded-full px-4 py-3 border pointer-events-auto transition-all duration-300"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            borderColor: 'rgba(255, 255, 255, 0.12)',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+          }}
+        >
           <a
             href="#films"
             className="text-neutral-300 hover:text-[#ff007f] transition-colors text-base px-6 py-2.5 rounded-full font-medium"
@@ -103,84 +133,225 @@ function App() {
           </a>
         </div>
 
-        {/* Botão de ação à direita */}
-        <button className="bg-white/10 backdrop-blur-2xl border border-white/20 text-white text-base font-normal tracking-tight rounded-full px-8 py-4 hover:bg-white/20 hover:border-[#ff007f]/50 hover:shadow-[0_0_20px_rgba(255,0,127,0.3)] transition-all duration-300">
+        {/* Botão de ação à direita com vidro transparente e hover neon */}
+        <button 
+          onMouseEnter={() => setBtnHover(true)}
+          onMouseLeave={() => setBtnHover(false)}
+          className="rounded-full px-8 py-4 font-medium transition-all duration-300 pointer-events-auto border hover:scale-102"
+          style={{
+            backgroundColor: btnHover ? 'rgba(255, 0, 127, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+            color: '#ffffff',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            borderColor: btnHover ? '#ff007f' : 'rgba(255, 255, 255, 0.15)',
+            boxShadow: btnHover ? '0 0 25px rgba(255, 0, 127, 0.4)' : '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+          }}
+        >
           vamos conversar
         </button>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative h-screen w-full overflow-hidden bg-black z-10">
-        {/* Grainy, moody background image set as Hero */}
-        <img
-          src="/hero_bg.png"
-          alt="maria films background"
-          className="absolute inset-0 w-full h-full object-cover opacity-90"
-        />
-
-        {/* Conteúdo sobreposto do Hero */}
-        <div className="relative z-10 h-full w-full">
-          {/* Três palavras-chave escalonadas */}
-          <h1 className="hero-title absolute text-white font-medium text-[14vw] md:text-[13vw] left-4 md:left-10 top-[18%]">
-            capture
-          </h1>
-          <h1 className="hero-title absolute text-white font-medium text-[14vw] md:text-[13vw] right-4 md:right-10 top-[38%]">
-            sua
-          </h1>
-          <h1 className="hero-title absolute text-white font-medium text-[14vw] md:text-[13vw] left-[18%] md:left-[28%] top-[58%]">
-            história
-          </h1>
-
-          {/* Parágrafo de descrição */}
-          <p className="absolute left-6 md:left-10 top-[46%] max-w-[240px] text-[15px] leading-snug text-white/90">
-            capturamos narrativas visuais com a máxima precisão, dando poder para sua história inspirar em qualquer lugar
-          </p>
-
-          {/* Bloco de estatística - Superior Direito */}
-          <div className="absolute right-6 md:right-24 top-[14%] flex flex-col items-end group/stat cursor-default">
-            <div className="flex items-center gap-3 justify-end">
-              <span className="hidden md:block h-px w-24 bg-white/40 transform rotate-[20deg]" />
-              <span className="text-4xl md:text-5xl font-medium tracking-tight text-white transition-all duration-300 group-hover/stat:drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]">+85</span>
+      {/* Hero Container com Parallax de subida e fade de conteúdo */}
+      <div className="relative w-full h-screen bg-black z-10">
+        {heroScroll < 1 && (
+          <section 
+            className="fixed inset-0 w-full h-screen overflow-hidden bg-black flex items-center pt-24 pb-12"
+            style={{
+              pointerEvents: heroScroll >= 0.85 ? 'none' : 'auto',
+            }}
+          >
+            {/* Imagem da Câmera: posicionamento nativo à direita, sem cortes ou zoom */}
+            <div 
+              className="absolute inset-y-0 right-0 w-full md:w-[50%] h-full flex items-center justify-center md:justify-end pointer-events-none z-0"
+              style={{
+                opacity: (0.9 - heroScroll * 1.5) * (1 - heroScroll),
+                transform: `scale(${1 - heroScroll * 0.05}) translateY(${heroScroll * 30}px)`,
+                transition: 'opacity 0.05s ease-out, transform 0.05s ease-out',
+              }}
+            >
+              <img
+                src="/hero_camera.webp"
+                alt="Canon EOS-1 Ds"
+                className="w-full max-w-[450px] md:max-w-none md:h-[72vh] md:w-auto object-contain opacity-70 md:opacity-90 transition-opacity duration-700"
+                style={{ 
+                  mixBlendMode: 'screen', 
+                  filter: 'contrast(1.1) brightness(0.95)',
+                  maxHeight: '100%',
+                  maxWidth: '100%'
+                }}
+              />
             </div>
-            <div className="text-xs md:text-sm text-white/70 mt-1 text-right">
-              filmes finalizados
-            </div>
-          </div>
 
-          {/* Bloco de estatística - Inferior Esquerdo */}
-          <div className="absolute left-6 md:left-20 bottom-20 md:bottom-24 flex flex-col items-start group/stat cursor-default">
-            <div className="flex items-center gap-3">
-              <span className="text-4xl md:text-5xl font-medium tracking-tight text-white transition-all duration-300 group-hover/stat:drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]">+45m</span>
-              <span className="hidden md:block h-px w-24 bg-white/40 transform -rotate-[20deg]" />
-            </div>
-            <div className="text-xs md:text-sm text-white/70 mt-1">
-              visualizações geradas
-            </div>
-          </div>
+            {/* Conteúdo do Hero: Alinhamento assimétrico de luxo */}
+            <div 
+              className="relative z-10 container mx-auto px-6 md:px-12 w-full flex flex-col md:flex-row items-center gap-12 min-h-[80vh]"
+              style={{
+                opacity: 1 - heroScroll * 2,
+                transform: `translateY(-${heroScroll * 80}px)`,
+                transition: 'opacity 0.05s ease-out, transform 0.05s ease-out',
+              }}
+            >
+              {/* Lado Esquerdo: Tipografia e painel de ações em vidro */}
+              <div className="w-full md:w-[60%] flex flex-col gap-8 items-start text-left pointer-events-auto">
+                
+                {/* Tagline com foto pequena estilo portfólio premium */}
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full overflow-hidden border border-white/12 bg-neutral-900 flex-shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+                    <img 
+                      src="/maria_portrait.png" 
+                      alt="Maria Eduarda" 
+                      className="w-full h-full object-cover object-[center_20%]"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] tracking-[0.25em] text-neutral-300 uppercase font-semibold font-display-tech">
+                        maria films
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-[#ff007f] shadow-[0_0_6px_#ff007f] animate-pulse" />
+                    </div>
+                    <span className="text-[8px] text-neutral-500 uppercase font-display-tech tracking-widest mt-0.5">
+                      direção por maria eduarda
+                    </span>
+                  </div>
+                </div>
 
-          {/* Bloco de estatística - Inferior Direito */}
-          <div className="absolute right-6 md:right-20 bottom-16 md:bottom-20 flex flex-col items-end group/stat cursor-default">
-            <div className="flex items-center gap-3 justify-end">
-              <span className="hidden md:block h-px w-24 bg-white/40 transform -rotate-[20deg]" />
-              <span className="text-4xl md:text-5xl font-medium tracking-tight text-white transition-all duration-300 group-hover/stat:drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]">+12</span>
-            </div>
-            <div className="text-xs md:text-sm text-white/70 mt-1 text-right">
-              prêmios recebidos
-            </div>
-          </div>
+                {/* Título Principal com tipografia mista Apple/Figma/Sony */}
+                <div className="flex flex-col select-none tracking-tight leading-[0.82] gap-1">
+                  <span className="font-serif-editorial italic text-[11vw] md:text-[6vw] font-light text-neutral-400 lowercase leading-[0.9]">
+                    esculpindo
+                  </span>
+                  <span className="font-display-tech font-extrabold text-[13vw] md:text-[7.5vw] uppercase tracking-tighter text-white leading-[0.82]">
+                    o tempo.
+                  </span>
+                </div>
 
-          {/* Scroll Indicator */}
-          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 z-15 opacity-60">
-            <span className="text-[9px] uppercase tracking-[0.2em] text-white/50 font-mono">scroll</span>
-            <div className="w-5 h-8 border border-white/30 rounded-full flex justify-center p-1">
-              <div className="w-1 h-2 bg-white rounded-full animate-bounce" />
-            </div>
-          </div>
-        </div>
+                {/* Card de CTA com vidro translúcido premium */}
+                <div 
+                  className="w-full max-w-md border rounded-2xl p-6 md:p-8 transition-all duration-300"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                    backdropFilter: 'blur(30px)',
+                    WebkitBackdropFilter: 'blur(30px)',
+                    borderColor: 'rgba(255, 255, 255, 0.07)',
+                    boxShadow: '0 16px 45px 0 rgba(0, 0, 0, 0.6)',
+                  }}
+                >
+                  <p className="text-xs md:text-[13px] text-neutral-400 leading-relaxed lowercase mb-6">
+                    transformamos visões brutas em narrativas cinematográficas de alto impacto. esculpimos cada corte com rigor estético, ritmo cirúrgico e ressonância emocional.
+                  </p>
 
-        {/* Degradê preto na parte inferior */}
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-black z-15" />
-      </section>
+                  {/* Botões Glassmorphism de alta costura */}
+                  <div className="flex flex-col sm:flex-row gap-3.5 w-full">
+                    {/* Botão de Destaque com seta deslizante */}
+                    <a
+                      href="#films"
+                      onMouseEnter={() => setHeroBtn1Hover(true)}
+                      onMouseLeave={() => setHeroBtn1Hover(false)}
+                      className="flex-1 flex items-center justify-between border rounded-full h-12 pl-5 pr-1.5 transition-all duration-300 text-[10px] uppercase tracking-wider font-semibold font-display-tech relative group overflow-hidden"
+                      style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                        borderColor: heroBtn1Hover ? 'rgba(255, 0, 127, 0.4)' : 'rgba(255, 255, 255, 0.1)',
+                        color: '#ffffff',
+                        boxShadow: heroBtn1Hover ? '0 0 25px rgba(255, 0, 127, 0.25)' : 'none',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                      }}
+                    >
+                      <span>ver portfólio</span>
+                      <div 
+                        className="w-8 h-8 rounded-full bg-[#ff007f] flex items-center justify-center transition-all duration-300"
+                        style={{
+                          transform: heroBtn1Hover ? 'translateX(2px)' : 'none',
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5 text-white">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                      </div>
+                    </a>
+                    
+                    {/* Botão secundário de contorno de vidro */}
+                    <a
+                      href="#contact"
+                      onMouseEnter={() => setHeroBtn2Hover(true)}
+                      onMouseLeave={() => setHeroBtn2Hover(false)}
+                      className="flex-1 flex items-center justify-center border rounded-full h-12 px-5 transition-all duration-300 text-[10px] uppercase tracking-wider font-semibold font-display-tech"
+                      style={{
+                        backgroundColor: heroBtn2Hover ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
+                        borderColor: heroBtn2Hover ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.1)',
+                        color: '#ffffff',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                      }}
+                    >
+                      <span>iniciar projeto</span>
+                    </a>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Espaçador para empurrar o layout no desktop */}
+              <div className="hidden md:block w-full md:w-[40%] pointer-events-none" />
+            </div>
+
+            {/* Linha de Estatísticas e Indicador de Scroll no Rodapé do Hero */}
+            <div 
+              className="absolute bottom-6 left-0 right-0 z-10 w-full px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-6 pointer-events-none"
+              style={{
+                opacity: 1 - heroScroll * 2.5,
+                transition: 'opacity 0.05s ease-out',
+              }}
+            >
+              {/* Estatísticas Mobile */}
+              <div className="md:hidden grid grid-cols-3 gap-2 w-full border-t border-white/5 pt-4 pointer-events-auto">
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold text-white leading-none font-display-tech">+85</span>
+                  <span className="text-[8px] text-neutral-500 uppercase tracking-widest mt-1 font-display-tech">filmes</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold text-white leading-none font-display-tech">+45m</span>
+                  <span className="text-[8px] text-neutral-500 uppercase tracking-widest mt-1 font-display-tech">views</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold text-[#ff007f] leading-none font-display-tech">+12</span>
+                  <span className="text-[8px] text-neutral-500 uppercase tracking-widest mt-1 font-display-tech">prêmios</span>
+                </div>
+              </div>
+
+              {/* Estatísticas Desktop Esquerda */}
+              <div className="hidden md:flex flex-col items-start pointer-events-auto group/stat cursor-default">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold font-display-tech tracking-tight text-white transition-all duration-300 group-hover/stat:text-[#ff007f]">+85</span>
+                  <span className="h-px w-8 bg-white/10" />
+                  <span className="text-[9px] uppercase tracking-widest text-neutral-500 font-display-tech">filmes finalizados</span>
+                </div>
+              </div>
+
+              {/* Indicador de Rolar (Scroll) */}
+              <div className="hidden md:flex flex-col items-center gap-1.5 opacity-40">
+                <span className="text-[9px] uppercase tracking-[0.2em] text-white/50 font-display-tech">scroll</span>
+                <div className="w-4 h-7 border border-white/20 rounded-full flex justify-center p-1">
+                  <div className="w-1 h-1.5 bg-white rounded-full animate-bounce" />
+                </div>
+              </div>
+
+              {/* Estatísticas Desktop Direita */}
+              <div className="hidden md:flex flex-col items-end pointer-events-auto group/stat cursor-default">
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] uppercase tracking-widest text-neutral-500 font-display-tech">visualizações geradas</span>
+                  <span className="h-px w-8 bg-white/10" />
+                  <span className="text-2xl font-bold font-display-tech tracking-tight text-white transition-all duration-300 group-hover/stat:text-[#ff007f]">+45m</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Degradê de fundo escuro para fusão com a próxima seção */}
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-black z-10" />
+          </section>
+        )}
+      </div>
 
       {/* Scrollytelling Section */}
       <section ref={scrollytellingRef} className="relative h-[300vh] bg-black z-20">
@@ -188,7 +359,7 @@ function App() {
           {/* Canvas Background driven by scroll progress scrubbing through rotating camera */}
           <ScrollytellingCanvas
             scrollProgress={progress}
-            frameCount={259}
+            frameCount={130}
           />
 
           {/* Textos sobrepostos sequenciais (Visão, Produção e Execução) */}

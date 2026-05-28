@@ -99,13 +99,15 @@ export function CinematicPortal() {
           }}
         >
           <video
-            src="/Efeit Festa.mp4"
             autoPlay
             loop
             muted
             playsInline
             className="absolute inset-0 w-full h-full object-cover scale-105"
-          />
+          >
+            <source src="/Efeit Festa.webm" type="video/webm" />
+            <source src="/Efeit Festa.mp4" type="video/mp4" />
+          </video>
           {/* Contrast vignette mask overlay */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(0,0,0,0.85)_100%)] pointer-events-none mix-blend-multiply opacity-50" />
         </div>

@@ -7,11 +7,9 @@ interface ScrollytellingCanvasProps {
 
 export function ScrollytellingCanvas({
   scrollProgress,
-  frameCount = 259,
+  frameCount = 130,
 }: ScrollytellingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // Ref to hold frames for the animation loop
@@ -25,39 +23,64 @@ export function ScrollytellingCanvas({
   // Pre-load static frames on mount
   useEffect(() => {
     let active = true;
-    const tempFrames: ImageBitmap[] = [];
 
     const loadFrames = async () => {
       try {
-        for (let i = 1; i <= frameCount; i++) {
-          if (!active) break;
-          // Format number as zero-padded 3-digit (e.g. 001, 002, ..., 259)
+        const concurrency = 20;
+        const results = new Array(frameCount);
+        let loadedCount = 0;
+
+        const loadFile = async (index: number) => {
+          const i = index + 1;
           const numStr = String(i).padStart(3, '0');
-          const imgUrl = `/frames/frame_${numStr}.jpg`;
+          const imgUrl = `/frames/frame_${numStr}.webp`;
 
           const img = new Image();
           img.src = imgUrl;
 
-          await new Promise<void>((resolve, reject) => {
+          await new Promise<void>((resolve) => {
             img.onload = () => resolve();
-            img.onerror = () => reject(new Error(`erro ao carregar o frame ${i}`));
+            img.onerror = () => {
+              console.warn(`falha ao carregar frame ${i}`);
+              resolve(); // Resolve anyway to avoid blocking the queue
+            };
           });
 
-          // Grab the image as an ImageBitmap
-          const bitmap = await createImageBitmap(img);
-          tempFrames.push(bitmap);
-          setLoadingProgress(Math.round((i / frameCount) * 100));
-        }
+          if (!active) return;
+
+          // Only create bitmap if image loaded successfully
+          if (img.complete && img.naturalWidth > 0) {
+            try {
+              const bitmap = await createImageBitmap(img);
+              results[index] = bitmap;
+            } catch (bitmapErr) {
+              console.warn(`falha ao criar bitmap para o frame ${i}`, bitmapErr);
+            }
+          }
+
+          loadedCount++;
+        };
+
+        // Create workers that pull indexes from a shared queue
+        const indices = [...Array(frameCount).keys()];
+        const worker = async () => {
+          while (indices.length > 0 && active) {
+            const idx = indices.shift()!;
+            await loadFile(idx);
+          }
+        };
+
+        // Start all workers in parallel
+        await Promise.all(Array(concurrency).fill(null).map(worker));
 
         if (active) {
-          framesRef.current = tempFrames;
-          setIsLoading(false);
+          // Keep only successfully loaded bitmaps
+          framesRef.current = results.filter((b): b is ImageBitmap => !!b);
         }
       } catch (err) {
         console.error('erro ao carregar frames estáticos:', err);
         if (active) {
           setError(err instanceof Error ? err.message : 'erro ao carregar frames');
-          setIsLoading(false);
         }
       }
     };
@@ -73,7 +96,15 @@ export function ScrollytellingCanvas({
 
   // Update target frame when scrollProgress changes
   useEffect(() => {
-    animRef.current.targetFrame = scrollProgress * (frameCount - 1);
+    let target;
+    if (scrollProgress <= 0.5) {
+      // 0.0 -> 0.5 maps to 0 -> frameCount - 1
+      target = (scrollProgress / 0.5) * (frameCount - 1);
+    } else {
+      // 0.5 -> 1.0 maps to frameCount - 1 -> 0
+      target = ((1.0 - scrollProgress) / 0.5) * (frameCount - 1);
+    }
+    animRef.current.targetFrame = target;
   }, [scrollProgress, frameCount]);
 
   // Animate and draw loop
@@ -97,7 +128,15 @@ export function ScrollytellingCanvas({
       const ch = h / r;
       
       ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(img, cx, cy, cw, ch, 0, 0, w, h);
+      
+      // Scale down drawing of the camera to zoom it out and increase quality
+      const zoomOutFactor = 0.72;
+      const dw = w * zoomOutFactor;
+      const dh = h * zoomOutFactor;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2;
+      
+      ctx.drawImage(img, cx, cy, cw, ch, dx, dy, dw, dh);
     };
 
     const render = () => {
@@ -154,7 +193,7 @@ export function ScrollytellingCanvas({
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [isLoading]);
+  }, []);
 
   // Fallback rendering se houver erro ao carregar frames
   if (error) {
@@ -190,36 +229,6 @@ export function ScrollytellingCanvas({
 
   return (
     <div className="absolute inset-0 w-full h-full bg-black">
-      {isLoading && (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black text-white">
-          <div className="flex flex-col items-center gap-4">
-            <svg
-              className="animate-spin h-8 w-8 text-neutral-400"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-            <span className="text-xs tracking-widest text-neutral-400 uppercase font-mono">
-              carregando experiência ({loadingProgress}%)
-            </span>
-          </div>
-        </div>
-      )}
-
       <canvas
         ref={canvasRef}
         className="w-full h-full block object-cover opacity-60 mix-blend-screen"
