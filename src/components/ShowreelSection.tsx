@@ -1,5 +1,4 @@
 import { useRef, useState, useEffect } from 'react';
-import { useScrollProgress } from '../hooks/useScrollProgress';
 
 // More dramatic jagged tear with deeper amplitude for realism
 const topClip = 'polygon(0 0, 100% 0, 100% 48%, 96% 52%, 92% 47%, 88% 54%, 84% 46%, 80% 53%, 76% 48%, 72% 55%, 68% 45%, 64% 52%, 60% 47%, 56% 54%, 52% 46%, 48% 53%, 44% 48%, 40% 55%, 36% 45%, 32% 52%, 28% 47%, 24% 54%, 20% 46%, 16% 53%, 12% 48%, 8% 55%, 4% 47%, 0 51%)';
@@ -15,11 +14,24 @@ export function ShowreelSection() {
   const timeTextRef = useRef<HTMLSpanElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
 
+  // Direct DOM Refs for high-performance scroll interpolation
+  const topHalfRef = useRef<HTMLDivElement>(null);
+  const topHalfContentRef = useRef<HTMLDivElement>(null);
+  const topGlowRef = useRef<HTMLDivElement>(null);
+  const bottomHalfRef = useRef<HTMLDivElement>(null);
+  const bottomHalfContentRef = useRef<HTMLDivElement>(null);
+  const bottomGlowRef = useRef<HTMLDivElement>(null);
+  const hudRef1 = useRef<HTMLDivElement>(null);
+  const hudRef2 = useRef<HTMLDivElement>(null);
+  const hudRef3 = useRef<HTMLDivElement>(null);
+
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
+
+  const isOpenRef = useRef(isOpen);
 
   const mouseRef = useRef({
     x: 0,
@@ -163,16 +175,134 @@ export function ShowreelSection() {
     mouseRef.current.isHovered = false;
   };
 
-  // Play/pause background video based on lightbox state
+  // Passive high-performance scroll listener
   useEffect(() => {
-    const v1 = bgVideoRef1.current;
-    const v2 = bgVideoRef2.current;
-    if (isOpen) {
-      v1?.pause();
-      v2?.pause();
-    } else {
-      v1?.play().catch(() => {});
-      v2?.play().catch(() => {});
+    const handleScroll = () => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const elementHeight = rect.height;
+      const viewportHeight = window.innerHeight;
+      const totalScrollable = elementHeight - viewportHeight;
+      if (totalScrollable <= 0) return;
+
+      const scrolled = -rect.top;
+      const progress = Math.max(0, Math.min(1, scrolled / totalScrollable));
+      const splitProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.90));
+      
+      // Eased progress (ease-in-out cubic)
+      const easedSplit = splitProgress < 0.5
+        ? 4 * splitProgress * splitProgress * splitProgress
+        : 1 - Math.pow(-2 * splitProgress + 2, 3) / 2;
+
+      // 1. Update container style
+      container.style.backgroundColor = splitProgress > 0.01 ? 'transparent' : '#000';
+      container.style.pointerEvents = splitProgress >= 0.95 ? 'none' : 'auto';
+
+      // 2. Update Top Half
+      if (topHalfRef.current) {
+        topHalfRef.current.style.transform = `translate3d(0, -${easedSplit * 115}%, 0) scale(${1 + easedSplit * 0.02})`;
+      }
+      if (topHalfContentRef.current) {
+        topHalfContentRef.current.style.transform = `translate3d(0, ${easedSplit * 115}%, 0) scale(${1 / (1 + easedSplit * 0.02)})`;
+      }
+
+      // 3. Update Top Glow
+      if (topGlowRef.current) {
+        topGlowRef.current.style.transform = `translate3d(0, -${easedSplit * 115}vh, 0)`;
+        topGlowRef.current.style.opacity = Math.min(1, easedSplit * 5).toString();
+        if (easedSplit > 0.02) {
+          topGlowRef.current.style.background = `linear-gradient(90deg, transparent, rgba(255,255,255,${0.06 + easedSplit * 0.08}), transparent)`;
+          topGlowRef.current.style.boxShadow = `0 0 ${15 + easedSplit * 25}px rgba(255,255,255,${easedSplit * 0.15}), 0 0 ${40 + easedSplit * 40}px rgba(0,0,0,0.9)`;
+        } else {
+          topGlowRef.current.style.background = 'none';
+          topGlowRef.current.style.boxShadow = 'none';
+        }
+      }
+
+      // 4. Update Bottom Half
+      if (bottomHalfRef.current) {
+        bottomHalfRef.current.style.transform = `translate3d(0, ${easedSplit * 115}%, 0) scale(${1 + easedSplit * 0.02})`;
+      }
+      if (bottomHalfContentRef.current) {
+        bottomHalfContentRef.current.style.transform = `translate3d(0, -${easedSplit * 115}%, 0) scale(${1 / (1 + easedSplit * 0.02)})`;
+      }
+
+      // 5. Update Bottom Glow
+      if (bottomGlowRef.current) {
+        bottomGlowRef.current.style.transform = `translate3d(0, ${easedSplit * 115}vh, 0)`;
+        bottomGlowRef.current.style.opacity = Math.min(1, easedSplit * 5).toString();
+        if (easedSplit > 0.02) {
+          bottomGlowRef.current.style.background = `linear-gradient(90deg, transparent, rgba(255,255,255,${0.06 + easedSplit * 0.08}), transparent)`;
+          bottomGlowRef.current.style.boxShadow = `0 0 ${15 + easedSplit * 25}px rgba(255,255,255,${easedSplit * 0.15}), 0 0 ${40 + easedSplit * 40}px rgba(0,0,0,0.9)`;
+        } else {
+          bottomGlowRef.current.style.background = 'none';
+          bottomGlowRef.current.style.boxShadow = 'none';
+        }
+      }
+
+      // 6. Update HUD Elements
+      const hudOpacity = Math.max(0, 1 - easedSplit * 4).toString();
+      if (hudRef1.current) hudRef1.current.style.opacity = hudOpacity;
+      if (hudRef2.current) hudRef2.current.style.opacity = hudOpacity;
+      if (hudRef3.current) hudRef3.current.style.opacity = hudOpacity;
+
+      // 7. Video play/pause based on visible area and lightbox state
+      const v1 = bgVideoRef1.current;
+      const v2 = bgVideoRef2.current;
+      const inViewport = rect.top < viewportHeight && rect.bottom > 0;
+      const shouldPlay = inViewport && !isOpenRef.current && splitProgress < 0.95;
+
+      if (v1) {
+        if (shouldPlay) {
+          if (v1.paused) v1.play().catch(() => {});
+        } else {
+          if (!v1.paused) v1.pause();
+        }
+      }
+      if (v2) {
+        if (shouldPlay) {
+          if (v2.paused) v2.play().catch(() => {});
+        } else {
+          if (!v2.paused) v2.pause();
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    
+    // Initial call to sync styling on mount
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, []);
+
+  // Sync isOpen reference and trigger update
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    const container = containerRef.current;
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+      const v1 = bgVideoRef1.current;
+      const v2 = bgVideoRef2.current;
+      const progress = Math.max(0, Math.min(1, -rect.top / (rect.height - window.innerHeight)));
+      const splitProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.90));
+      const shouldPlay = inViewport && !isOpen && splitProgress < 0.95;
+
+      if (v1) {
+        if (shouldPlay) v1.play().catch(() => {});
+        else v1.pause();
+      }
+      if (v2) {
+        if (shouldPlay) v2.play().catch(() => {});
+        else v2.pause();
+      }
     }
   }, [isOpen]);
 
@@ -294,18 +424,12 @@ export function ShowreelSection() {
     }
   };
 
-  const progress = useScrollProgress(containerRef);
-  // Starts splitting at 5% and completes fully at 75% — giving time for the full reveal
-  const splitProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.70));
-  // Eased progress for cinematic feel (ease-in-out cubic)
-  const easedSplit = splitProgress < 0.5
-    ? 4 * splitProgress * splitProgress * splitProgress
-    : 1 - Math.pow(-2 * splitProgress + 2, 3) / 2;
+
 
   const renderContent = (bgVideoRef: React.RefObject<HTMLVideoElement | null>) => (
     <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
       {/* Background video */}
-      <div className="absolute inset-0 w-full h-full opacity-40 transition-all duration-700 ease-in-out filter grayscale hover:grayscale-0 hover:scale-[1.02] hover:opacity-55">
+      <div className="absolute inset-0 w-full h-full opacity-35 transition-opacity duration-500 ease-in-out hover:opacity-55">
         <video
           ref={bgVideoRef}
           autoPlay
@@ -353,8 +477,11 @@ export function ShowreelSection() {
     <>
       <section
         ref={containerRef}
-        className="relative h-[250vh] w-full z-30"
-        style={{ backgroundColor: splitProgress > 0.01 ? 'transparent' : '#000' }}
+        className="relative h-[450vh] w-full z-30"
+        style={{ 
+          backgroundColor: '#000',
+          pointerEvents: 'auto'
+        }}
       >
         <div
           className={`sticky top-0 h-screen w-full overflow-hidden bg-transparent ${
@@ -367,18 +494,18 @@ export function ShowreelSection() {
         >
           {/* Top Half — slides up and slightly scales for depth */}
           <div
+            ref={topHalfRef}
             className="absolute inset-0 w-full h-full overflow-hidden will-change-transform"
             style={{
               clipPath: topClip,
-              transform: `translateY(-${easedSplit * 115}%) scale(${1 + easedSplit * 0.02})`,
-              filter: easedSplit > 0.1 ? `drop-shadow(0 ${8 + easedSplit * 20}px ${12 + easedSplit * 30}px rgba(0,0,0,0.9))` : 'none',
-              transition: 'filter 0.3s ease-out',
+              transform: 'translate3d(0, 0%, 0) scale(1)',
             }}
           >
             <div
+              ref={topHalfContentRef}
               className="absolute inset-0 w-full h-full will-change-transform"
               style={{
-                transform: `translateY(${easedSplit * 115}%) scale(${1 / (1 + easedSplit * 0.02)})`,
+                transform: 'translate3d(0, 0%, 0) scale(1)',
               }}
             >
               {renderContent(bgVideoRef1)}
@@ -387,35 +514,32 @@ export function ShowreelSection() {
 
           {/* Torn edge glow line — top half */}
           <div
+            ref={topGlowRef}
             className="absolute left-0 w-full pointer-events-none z-40"
             style={{
               top: 'calc(50% - 2px)',
               height: '4px',
-              transform: `translateY(-${easedSplit * 115}%)`,
-              background: easedSplit > 0.02
-                ? `linear-gradient(90deg, transparent, rgba(255,255,255,${0.06 + easedSplit * 0.08}), transparent)`
-                : 'none',
-              boxShadow: easedSplit > 0.02
-                ? `0 0 ${15 + easedSplit * 25}px rgba(255,255,255,${easedSplit * 0.15}), 0 0 ${40 + easedSplit * 40}px rgba(0,0,0,0.9)`
-                : 'none',
-              opacity: Math.min(1, easedSplit * 5),
+              transform: 'translate3d(0, 0vh, 0)',
+              background: 'none',
+              boxShadow: 'none',
+              opacity: 0,
             }}
           />
 
           {/* Bottom Half — slides down and slightly scales for depth */}
           <div
+            ref={bottomHalfRef}
             className="absolute inset-0 w-full h-full overflow-hidden will-change-transform"
             style={{
               clipPath: bottomClip,
-              transform: `translateY(${easedSplit * 115}%) scale(${1 + easedSplit * 0.02})`,
-              filter: easedSplit > 0.1 ? `drop-shadow(0 -${8 + easedSplit * 20}px ${12 + easedSplit * 30}px rgba(0,0,0,0.9))` : 'none',
-              transition: 'filter 0.3s ease-out',
+              transform: 'translate3d(0, 0%, 0) scale(1)',
             }}
           >
             <div
+              ref={bottomHalfContentRef}
               className="absolute inset-0 w-full h-full will-change-transform"
               style={{
-                transform: `translateY(-${easedSplit * 115}%) scale(${1 / (1 + easedSplit * 0.02)})`,
+                transform: 'translate3d(0, 0%, 0) scale(1)',
               }}
             >
               {renderContent(bgVideoRef2)}
@@ -424,37 +548,37 @@ export function ShowreelSection() {
 
           {/* Torn edge glow line — bottom half */}
           <div
+            ref={bottomGlowRef}
             className="absolute left-0 w-full pointer-events-none z-40"
             style={{
               top: 'calc(50% - 2px)',
               height: '4px',
-              transform: `translateY(${easedSplit * 115}%)`,
-              background: easedSplit > 0.02
-                ? `linear-gradient(90deg, transparent, rgba(255,255,255,${0.06 + easedSplit * 0.08}), transparent)`
-                : 'none',
-              boxShadow: easedSplit > 0.02
-                ? `0 0 ${15 + easedSplit * 25}px rgba(255,255,255,${easedSplit * 0.15}), 0 0 ${40 + easedSplit * 40}px rgba(0,0,0,0.9)`
-                : 'none',
-              opacity: Math.min(1, easedSplit * 5),
+              transform: 'translateY(0vh)',
+              background: 'none',
+              boxShadow: 'none',
+              opacity: 0,
             }}
           />
 
           {/* HUD borders/headers — fade out quickly as curtain opens */}
           <div 
+            ref={hudRef1}
             className="absolute top-6 left-6 md:left-10 z-30 text-[9px] font-display-tech tracking-[0.2em] text-neutral-500 uppercase select-none pointer-events-none"
-            style={{ opacity: Math.max(0, 1 - easedSplit * 4) }}
+            style={{ opacity: 1 }}
           >
             system // play_portfolio
           </div>
           <div 
+            ref={hudRef2}
             className="absolute top-6 right-6 md:right-10 z-30 text-[9px] font-display-tech tracking-[0.2em] text-neutral-500 uppercase select-none pointer-events-none"
-            style={{ opacity: Math.max(0, 1 - easedSplit * 4) }}
+            style={{ opacity: 1 }}
           >
             aspect // 2.39:1
           </div>
           <div 
+            ref={hudRef3}
             className="absolute bottom-6 left-6 md:left-10 z-30 text-[9px] font-display-tech tracking-[0.2em] text-neutral-500 uppercase select-none pointer-events-none"
-            style={{ opacity: Math.max(0, 1 - easedSplit * 4) }}
+            style={{ opacity: 1 }}
           >
             maria films // portfólio 2026
           </div>

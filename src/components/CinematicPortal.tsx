@@ -67,6 +67,8 @@ export function CinematicPortal() {
 
   // Smart Active Scroll Jacking & Snapping para o Efeito Festa (CinematicPortal)
   useEffect(() => {
+    if (isMobile) return;
+
     const container = portalRef.current;
     if (!container) return;
 
@@ -269,7 +271,7 @@ export function CinematicPortal() {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
     };
-  }, [isFormOpen]);
+  }, [isFormOpen, isMobile]);
 
   // Responsive values for aperture scale and lens rotation based on scroll progress
   const apertureRadius = progress < 0.12 ? 12 : 12 + Math.pow((progress - 0.12) / 0.88, 1.8) * 138;

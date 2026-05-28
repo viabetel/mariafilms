@@ -13,67 +13,57 @@ function App() {
   const progress = useScrollProgress(scrollytellingRef);
   const scrollytellingLockRef = useRef(false);
   const [logoUrl, setLogoUrl] = useState<string>('');
+  const [loaderComplete, setLoaderComplete] = useState(false);
+  const [btnHover, setBtnHover] = useState(false);
+  const [logoHover, setLogoHover] = useState(false);
+  const [heroBtn1Hover, setHeroBtn1Hover] = useState(false);
+  const [heroBtn2Hover, setHeroBtn2Hover] = useState(false);
+  const [heroScroll, setHeroScroll] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isNavbarLight, setIsNavbarLight] = useState(false);
 
   // Smart Scroll Jacking & Snapping para o Scrollytelling (Câmera 360)
   useEffect(() => {
+    if (isMobile) return;
+
     const container = scrollytellingRef.current;
     if (!container) return;
 
-    const targets = [0.08, 0.24, 0.41, 0.58, 0.74, 0.91];
+    const targets = [0.0, 0.25, 0.54, 0.62, 0.705, 0.79, 0.87, 0.955];
     const maxStep = targets.length - 1;
 
-    const getClosestStep = (currentProgress: number) => {
-      let currentStep = 0;
-      let minDiff = Infinity;
-      targets.forEach((t, idx) => {
-        const diff = Math.abs(t - currentProgress);
-        if (diff < minDiff) {
-          minDiff = diff;
-          currentStep = idx;
+    const getCurrentStepIndex = (currentProgress: number) => {
+      const tolerance = 0.025;
+      let step = -1;
+      for (let i = 0; i < targets.length; i++) {
+        if (currentProgress >= targets[i] - tolerance) {
+          step = i;
         }
-      });
-      return currentStep;
+      }
+      return step;
     };
 
     const handleWheel = (e: WheelEvent) => {
       const rect = container.getBoundingClientRect();
       const totalScrollable = rect.height - window.innerHeight;
-
-      // Calcular o progresso atual
       const currentProgress = -rect.top / totalScrollable;
 
-      // Se estiver travado por animação anterior, previne o scroll e ignora
       if (scrollytellingLockRef.current) {
         e.preventDefault();
         return;
       }
 
       const delta = e.deltaY;
-      const currentStep = getClosestStep(currentProgress);
+      const currentStep = getCurrentStepIndex(currentProgress);
 
       if (delta > 0) {
         // ROLANDO PARA BAIXO
-        
-        // Caso 1: Seção entrando na tela por baixo
-        if (rect.top > 2 && rect.top < window.innerHeight * 0.45) {
-          e.preventDefault();
-          scrollytellingLockRef.current = true;
-          window.scrollTo({
-            top: window.scrollY + rect.top + targets[0] * totalScrollable,
-            behavior: 'smooth'
-          });
-          setTimeout(() => {
-            scrollytellingLockRef.current = false;
-          }, 800);
-          return;
-        }
-
-        // Caso 2: Totalmente ativo / travado dentro da seção
         if (rect.top <= 2 && rect.bottom >= window.innerHeight - 2) {
-          if (currentStep < maxStep) {
+          const nextStep = currentStep + 1;
+
+          if (nextStep <= maxStep) {
             e.preventDefault();
             scrollytellingLockRef.current = true;
-            const nextStep = currentStep + 1;
             window.scrollTo({
               top: window.scrollY + rect.top + targets[nextStep] * totalScrollable,
               behavior: 'smooth'
@@ -85,27 +75,12 @@ function App() {
         }
       } else if (delta < 0) {
         // ROLANDO PARA CIMA
-
-        // Caso 1: Seção entrando na tela por cima (usuário vindo de baixo)
-        if (rect.bottom < window.innerHeight - 2 && rect.bottom > window.innerHeight * 0.55) {
-          e.preventDefault();
-          scrollytellingLockRef.current = true;
-          window.scrollTo({
-            top: window.scrollY + rect.top + targets[maxStep] * totalScrollable,
-            behavior: 'smooth'
-          });
-          setTimeout(() => {
-            scrollytellingLockRef.current = false;
-          }, 800);
-          return;
-        }
-
-        // Caso 2: Totalmente ativo / travado dentro da seção
         if (rect.top <= 2 && rect.bottom >= window.innerHeight - 2) {
-          if (currentStep > 0) {
+          const prevStep = currentStep - 1;
+
+          if (prevStep >= 0) {
             e.preventDefault();
             scrollytellingLockRef.current = true;
-            const prevStep = currentStep - 1;
             window.scrollTo({
               top: window.scrollY + rect.top + targets[prevStep] * totalScrollable,
               behavior: 'smooth'
@@ -134,36 +109,20 @@ function App() {
       }
 
       const touchEndY = e.touches[0].clientY;
-      const deltaY = touchStartY - touchEndY; // positivo = deslizar para cima (scroll para baixo)
+      const deltaY = touchStartY - touchEndY;
 
-      // Sensibilidade mínima para touch (20px) - reduzido de 30px para precisar de menos força!
       if (Math.abs(deltaY) < 20) return;
 
-      const currentStep = getClosestStep(currentProgress);
+      const currentStep = getCurrentStepIndex(currentProgress);
 
       if (deltaY > 0) {
-        // DESLIZANDO PARA BAIXO (dedo vai para cima)
-        
-        // Caso 1: Seção entrando na tela por baixo
-        if (rect.top > 2 && rect.top < window.innerHeight * 0.45) {
-          e.preventDefault();
-          scrollytellingLockRef.current = true;
-          window.scrollTo({
-            top: window.scrollY + rect.top + targets[0] * totalScrollable,
-            behavior: 'smooth'
-          });
-          setTimeout(() => {
-            scrollytellingLockRef.current = false;
-          }, 800);
-          return;
-        }
-
-        // Caso 2: Totalmente ativo / travado
+        // DESLIZANDO PARA BAIXO
         if (rect.top <= 2 && rect.bottom >= window.innerHeight - 2) {
-          if (currentStep < maxStep) {
+          const nextStep = currentStep + 1;
+
+          if (nextStep <= maxStep) {
             e.preventDefault();
             scrollytellingLockRef.current = true;
-            const nextStep = currentStep + 1;
             window.scrollTo({
               top: window.scrollY + rect.top + targets[nextStep] * totalScrollable,
               behavior: 'smooth'
@@ -174,28 +133,13 @@ function App() {
           }
         }
       } else if (deltaY < 0) {
-        // DESLIZANDO PARA CIMA (dedo vai para baixo)
-
-        // Caso 1: Seção entrando na tela por cima
-        if (rect.bottom < window.innerHeight - 2 && rect.bottom > window.innerHeight * 0.55) {
-          e.preventDefault();
-          scrollytellingLockRef.current = true;
-          window.scrollTo({
-            top: window.scrollY + rect.top + targets[maxStep] * totalScrollable,
-            behavior: 'smooth'
-          });
-          setTimeout(() => {
-            scrollytellingLockRef.current = false;
-          }, 800);
-          return;
-        }
-
-        // Caso 2: Totalmente ativo / travado
+        // DESLIZANDO PARA CIMA
         if (rect.top <= 2 && rect.bottom >= window.innerHeight - 2) {
-          if (currentStep > 0) {
+          const prevStep = currentStep - 1;
+
+          if (prevStep >= 0) {
             e.preventDefault();
             scrollytellingLockRef.current = true;
-            const prevStep = currentStep - 1;
             window.scrollTo({
               top: window.scrollY + rect.top + targets[prevStep] * totalScrollable,
               behavior: 'smooth'
@@ -217,15 +161,7 @@ function App() {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
     };
-  }, []);
-  const [loaderComplete, setLoaderComplete] = useState(false);
-  const [btnHover, setBtnHover] = useState(false);
-  const [logoHover, setLogoHover] = useState(false);
-  const [heroBtn1Hover, setHeroBtn1Hover] = useState(false);
-  const [heroBtn2Hover, setHeroBtn2Hover] = useState(false);
-  const [heroScroll, setHeroScroll] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isNavbarLight, setIsNavbarLight] = useState(false);
+  }, [isMobile]);
 
   // Monitor contrast section (#about) to toggle light/dark Navbar
   useEffect(() => {
@@ -302,9 +238,12 @@ function App() {
     };
   }, []);
 
+  // Mapeamento do progresso ativo da Câmera 360 após a cortina do Showreel abrir
+  const activeProgress = progress < 0.50 ? 0 : (progress - 0.50) / 0.50;
+
   // Helper styling for scrollytelling step transitions
   const getScrollytellingStyle = (stepProgress: number) => {
-    const diff = progress - stepProgress;
+    const diff = activeProgress - stepProgress;
     const opacity = Math.pow(Math.max(0, Math.min(1, (0.08 - Math.abs(diff)) / 0.05)), 1.5);
     const rotateX = diff * -30;
     const translateY = diff * (isMobile ? 80 : 150);
@@ -489,10 +428,10 @@ function App() {
                 transition: 'opacity 0.05s ease-out, transform 0.05s ease-out'
               }}
             >
-              <div className="w-full md:w-[60%] flex flex-col gap-8 items-start text-left pointer-events-auto">
+              <div className="w-full md:w-[60%] flex flex-col gap-4 md:gap-8 items-start text-left pointer-events-auto">
                 {/* Director Header Badge */}
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full overflow-hidden border border-white/12 bg-neutral-900 flex-shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+                  <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden border border-white/12 bg-neutral-900 flex-shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
                     <img
                       src="/maria_portrait.png"
                       alt="Maria Eduarda"
@@ -501,12 +440,12 @@ function App() {
                   </div>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] tracking-[0.25em] text-neutral-300 uppercase font-semibold font-display-tech">
+                      <span className="text-[9px] md:text-[10px] tracking-[0.25em] text-neutral-300 uppercase font-semibold font-display-tech">
                         maria films
                       </span>
-                      <span className="w-1 h-1 rounded-full bg-[#ff007f] shadow-[0_0_6px_#ff007f] animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#ff007f] shadow-[0_0_6px_#ff007f] animate-pulse" />
                     </div>
-                    <span className="text-[8px] text-neutral-500 uppercase font-display-tech tracking-widest mt-0.5">
+                    <span className="text-[7px] md:text-[8px] text-neutral-500 uppercase font-display-tech tracking-widest mt-0.5">
                       direção por maria eduarda
                     </span>
                   </div>
@@ -514,18 +453,18 @@ function App() {
 
                 {/* Slogan */}
                 <div className="flex flex-col select-none tracking-tight leading-[0.82] gap-1">
-                  <span className="font-serif-editorial italic text-[11vw] md:text-[6vw] font-light text-neutral-400 lowercase leading-[0.9]">
+                  <span className="font-serif-editorial italic text-[9vw] md:text-[6vw] font-light text-neutral-400 lowercase leading-[0.9]">
                     esculpindo
                   </span>
-                  <span className="font-display-tech font-extrabold text-[13vw] md:text-[7.5vw] uppercase tracking-tighter text-white leading-[0.82]">
+                  <span className="font-display-tech font-extrabold text-[11vw] md:text-[7.5vw] uppercase tracking-tighter text-white leading-[0.82]">
                     o tempo.
                   </span>
                 </div>
 
-                {/* Glass Card Description */}
+                {/* Flat & Elegant Description for Mobile, Glass Card for Desktop */}
                 <div
-                  className="w-full max-w-md border rounded-2xl p-6 md:p-8 transition-all duration-300"
-                  style={{
+                  className="w-full max-w-md md:border md:rounded-2xl p-0 md:p-8 transition-all duration-300"
+                  style={isMobile ? {} : {
                     backgroundColor: 'rgba(255, 255, 255, 0.03)',
                     backdropFilter: 'blur(30px)',
                     WebkitBackdropFilter: 'blur(30px)',
@@ -533,16 +472,16 @@ function App() {
                     boxShadow: '0 16px 45px 0 rgba(0, 0, 0, 0.6)'
                   }}
                 >
-                  <p className="text-xs md:text-[13px] text-neutral-400 leading-relaxed lowercase mb-6">
+                  <p className="text-xs md:text-[13px] text-neutral-400 leading-relaxed lowercase mb-4 md:mb-6">
                     transformamos visões brutas em narrativas cinematográficas de alto impacto. esculpimos cada corte com rigor estético, ritmo cirúrgico e ressonância emocional.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-3.5 w-full">
+                  <div className="flex flex-row gap-3 w-full">
                     {/* View portfolio CTA */}
                     <a
                       href="#films"
                       onMouseEnter={() => setHeroBtn1Hover(true)}
                       onMouseLeave={() => setHeroBtn1Hover(false)}
-                      className="flex-1 flex items-center justify-between border rounded-full h-12 pl-5 pr-1.5 transition-all duration-300 text-[10px] uppercase tracking-wider font-semibold font-display-tech relative group overflow-hidden"
+                      className="flex-1 flex items-center justify-between border rounded-full h-10 md:h-12 pl-4 pr-1 md:pl-5 md:pr-1.5 transition-all duration-300 text-[9px] md:text-[10px] uppercase tracking-wider font-semibold font-display-tech relative group overflow-hidden"
                       style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.03)',
                         borderColor: heroBtn1Hover ? 'rgba(255, 0, 127, 0.4)' : 'rgba(255, 255, 255, 0.1)',
@@ -554,7 +493,7 @@ function App() {
                     >
                       <span>ver portfólio</span>
                       <div
-                        className="w-8 h-8 rounded-full bg-[#ff007f] flex items-center justify-center transition-all duration-300"
+                        className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#ff007f] flex items-center justify-center transition-all duration-300"
                         style={{
                           transform: heroBtn1Hover ? 'translateX(2px)' : 'none'
                         }}
@@ -565,7 +504,7 @@ function App() {
                           viewBox="0 0 24 24"
                           strokeWidth="2.5"
                           stroke="currentColor"
-                          className="w-3.5 h-3.5 text-white"
+                          className="w-3 h-3 md:w-3.5 md:h-3.5 text-white"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                         </svg>
@@ -577,7 +516,7 @@ function App() {
                       href="#contact"
                       onMouseEnter={() => setHeroBtn2Hover(true)}
                       onMouseLeave={() => setHeroBtn2Hover(false)}
-                      className="flex-1 flex items-center justify-center border rounded-full h-12 px-5 transition-all duration-300 text-[10px] uppercase tracking-wider font-semibold font-display-tech"
+                      className="flex-1 flex items-center justify-center border rounded-full h-10 md:h-12 px-4 md:px-5 transition-all duration-300 text-[9px] md:text-[10px] uppercase tracking-wider font-semibold font-display-tech"
                       style={{
                         backgroundColor: heroBtn2Hover ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
                         borderColor: heroBtn2Hover ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.1)',
@@ -588,6 +527,19 @@ function App() {
                     >
                       <span>iniciar projeto</span>
                     </a>
+                  </div>
+
+                  {/* Compact Mobile Stats Inline */}
+                  <div className="md:hidden flex items-center justify-between w-full mt-4 pt-4 border-t border-white/5 text-[9px] font-display-tech uppercase text-neutral-500 tracking-wider">
+                    <span>
+                      <strong className="text-white font-bold">+85</strong> filmes
+                    </span>
+                    <span>
+                      <strong className="text-white font-bold">+45m</strong> views
+                    </span>
+                    <span>
+                      <strong className="text-[#ff007f] font-bold">+12</strong> prêmios
+                    </span>
                   </div>
                 </div>
               </div>
@@ -602,22 +554,6 @@ function App() {
                 transition: 'opacity 0.05s ease-out'
               }}
             >
-              {/* Mobile stats panel */}
-              <div className="md:hidden grid grid-cols-3 gap-2 w-full border-t border-white/5 pt-4 pointer-events-auto">
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold text-white leading-none font-display-tech">+85</span>
-                  <span className="text-[8px] text-neutral-500 uppercase tracking-widest mt-1 font-display-tech">filmes</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold text-white leading-none font-display-tech">+45m</span>
-                  <span className="text-[8px] text-neutral-500 uppercase tracking-widest mt-1 font-display-tech">views</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold text-[#ff007f] leading-none font-display-tech">+12</span>
-                  <span className="text-[8px] text-neutral-500 uppercase tracking-widest mt-1 font-display-tech">prêmios</span>
-                </div>
-              </div>
-
               {/* Desktop Left Stat */}
               <div className="hidden md:flex flex-col items-start pointer-events-auto group/stat cursor-default">
                 <div className="flex items-center gap-2">
@@ -663,9 +599,9 @@ function App() {
       <ShowreelSection />
 
       {/* Scrollytelling / Manifesto Canvas Section */}
-      <section ref={scrollytellingRef} className="relative h-[600vh] bg-black z-20 -mt-[250vh]">
+      <section ref={scrollytellingRef} className="relative h-[800vh] bg-black z-20 -mt-[450vh]">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center bg-black">
-          <ScrollytellingCanvas scrollProgress={progress} frameCount={130} />
+          <ScrollytellingCanvas scrollProgress={activeProgress} frameCount={130} />
           
           {/* Manifesto Typography Overlays */}
           <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none" style={{ perspective: '1200px' }}>
@@ -750,9 +686,9 @@ function App() {
             </div>
             <span className="h-3 w-px bg-white/10" />
             <span className="text-white/80">
-              {progress < 0.28 && 'lente // 24mm f/1.4'}
-              {progress >= 0.28 && progress < 0.68 && 'lente // 50mm f/1.2'}
-              {progress >= 0.68 && 'lente // 85mm f/1.4'}
+              {activeProgress < 0.28 && 'lente // 24mm f/1.4'}
+              {activeProgress >= 0.28 && activeProgress < 0.68 && 'lente // 50mm f/1.2'}
+              {activeProgress >= 0.68 && 'lente // 85mm f/1.4'}
             </span>
           </div>
 
@@ -762,12 +698,12 @@ function App() {
             <div className="h-[2px] w-24 bg-neutral-900 relative rounded-full overflow-hidden">
               <div
                 className="absolute left-0 top-0 h-full bg-[#ff007f] transition-all duration-75"
-                style={{ width: `${progress * 100}%` }}
+                style={{ width: `${activeProgress * 100}%` }}
               />
             </div>
             <span className="text-[10px] text-neutral-500 tracking-wider font-display-tech">06</span>
             <span className="text-[10px] text-neutral-400 font-display-tech tracking-widest ml-1 opacity-80">
-              ({Math.round(progress * 100)}%)
+              ({Math.round(activeProgress * 100)}%)
             </span>
           </div>
 
@@ -776,12 +712,12 @@ function App() {
             {[0, 1, 2, 3, 4, 5].map((idx) => {
               let active = false;
               // Active ranges for the 6 steps
-              if (idx === 0) active = progress >= 0.0 && progress < 0.16;
-              if (idx === 1) active = progress >= 0.16 && progress < 0.32;
-              if (idx === 2) active = progress >= 0.32 && progress < 0.50;
-              if (idx === 3) active = progress >= 0.50 && progress < 0.66;
-              if (idx === 4) active = progress >= 0.66 && progress < 0.82;
-              if (idx === 5) active = progress >= 0.82;
+              if (idx === 0) active = activeProgress >= 0.0 && activeProgress < 0.16;
+              if (idx === 1) active = activeProgress >= 0.16 && activeProgress < 0.32;
+              if (idx === 2) active = activeProgress >= 0.32 && activeProgress < 0.50;
+              if (idx === 3) active = activeProgress >= 0.50 && activeProgress < 0.66;
+              if (idx === 4) active = activeProgress >= 0.66 && activeProgress < 0.82;
+              if (idx === 5) active = activeProgress >= 0.82;
 
               return (
                 <div
@@ -791,7 +727,7 @@ function App() {
                     if (!scrollytellingRef.current) return;
                     const rect = scrollytellingRef.current.getBoundingClientRect();
                     const totalScrollable = rect.height - window.innerHeight;
-                    const targets = [0.08, 0.24, 0.41, 0.58, 0.74, 0.91];
+                    const targets = [0.54, 0.62, 0.705, 0.79, 0.87, 0.955];
                     const targetProgress = targets[idx];
 
                     window.scrollTo({
