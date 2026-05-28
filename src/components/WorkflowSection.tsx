@@ -445,23 +445,44 @@ export function WorkflowSection() {
           </div>
 
           {/* Interactive Modern Tabs */}
-          <div className="flex flex-row justify-between border border-white/5 bg-white/[0.02] p-1 rounded-xl w-full select-none gap-1">
+          <div className="flex flex-row justify-between border border-white/10 bg-neutral-900/40 backdrop-blur-lg p-1.5 rounded-xl w-full select-none gap-2 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
             {steps.map((step, idx) => {
               const isActive = idx === activeIndex;
               return (
                 <button
                   key={step.num}
                   onClick={() => setActiveIndex(idx)}
-                  className={`flex-1 py-2.5 px-1 rounded-lg text-center font-display-tech transition-all duration-300 flex flex-col items-center justify-center gap-0.5 ${
+                  className={`flex-1 py-3 px-1 rounded-lg text-center font-display-tech transition-all duration-300 flex flex-col items-center justify-center gap-1.5 relative overflow-hidden group active:scale-95 ${
                     isActive
-                      ? 'bg-[#ff007f]/10 border border-[#ff007f]/30 text-white shadow-[0_0_15px_rgba(255,0,127,0.15)]'
-                      : 'border border-transparent text-neutral-500 hover:text-neutral-300'
+                      ? 'bg-neutral-800/85 border border-white/12 text-white shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)]'
+                      : 'border border-transparent text-neutral-400 hover:text-neutral-200'
                   }`}
                 >
-                  <span className={`text-[7px] uppercase tracking-widest ${isActive ? 'text-[#ff007f]' : 'text-neutral-600'}`}>
-                    {step.num}
-                  </span>
-                  <span className="text-[8px] font-bold tracking-tight uppercase">
+                  {/* Subtle active pink glow radial background */}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,127,0.12)_0%,transparent_70%)] pointer-events-none" />
+                  )}
+
+                  {/* Top neon line indicator for active status */}
+                  <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full transition-all duration-300 ${
+                    isActive ? 'bg-[#ff007f] shadow-[0_0_8px_#ff007f]' : 'bg-transparent'
+                  }`} />
+
+                  {/* Icon or visual stage marker */}
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[9px] uppercase tracking-widest font-extrabold transition-colors duration-300 ${
+                      isActive ? 'text-[#ff007f] drop-shadow-[0_0_5px_rgba(255,0,127,0.4)]' : 'text-neutral-500'
+                    }`}>
+                      {step.num}
+                    </span>
+                    <span className={`w-1 h-1 rounded-full transition-all duration-300 ${
+                      isActive ? 'bg-[#ff007f] animate-pulse shadow-[0_0_4px_#ff007f]' : 'bg-neutral-600'
+                    }`} />
+                  </div>
+
+                  <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors duration-300 ${
+                    isActive ? 'text-white' : 'text-neutral-400'
+                  }`}>
                     {step.phase}
                   </span>
                 </button>
@@ -616,7 +637,7 @@ export function WorkflowSection() {
                       max="100"
                       value={hookIntensity}
                       onChange={(e) => setHookIntensity(parseInt(e.target.value))}
-                      className="w-full h-1 bg-white/10 rounded accent-[#ff007f] cursor-pointer appearance-none"
+                      className="w-full h-1.5 bg-white/10 rounded accent-[#ff007f] cursor-pointer appearance-none outline-none"
                     />
                   </div>
                 ) : activeIndex === 1 ? (
@@ -633,7 +654,7 @@ export function WorkflowSection() {
                         step="100"
                         value={iso}
                         onChange={(e) => setIso(parseInt(e.target.value))}
-                        className="w-1/2 h-0.5 bg-white/10 rounded accent-[#ff007f] cursor-pointer appearance-none"
+                        className="w-1/2 h-1 bg-white/10 rounded accent-[#ff007f] cursor-pointer appearance-none outline-none"
                       />
                       <input
                         type="range"
@@ -641,24 +662,24 @@ export function WorkflowSection() {
                         max="100"
                         value={zoom}
                         onChange={(e) => setZoom(parseInt(e.target.value))}
-                        className="w-1/2 h-0.5 bg-white/10 rounded accent-[#ff007f] cursor-pointer appearance-none"
+                        className="w-1/2 h-1 bg-white/10 rounded accent-[#ff007f] cursor-pointer appearance-none outline-none"
                       />
                     </div>
                     <div className="flex justify-between items-center mt-0.5">
                       <span className="text-[7px]">{apertures[apertureIdx]}</span>
-                      <div className="flex gap-0.5">
+                      <div className="flex gap-1">
                         <button
                           onClick={() => setApertureIdx((apertureIdx + 1) % apertures.length)}
-                          className="px-1 py-0.2 bg-white/5 border border-white/10 rounded text-[6px] text-white"
+                          className="px-2 py-0.5 bg-neutral-850 border border-white/12 rounded text-[7px] font-display-tech uppercase text-white active:scale-95 active:bg-[#ff007f]/20 transition-all"
                         >
                           INC
                         </button>
                         <button
                           onClick={() => setIsFocusPeaking(!isFocusPeaking)}
-                          className={`px-1 py-0.2 text-[6px] rounded border transition-all ${
+                          className={`px-2 py-0.5 text-[7px] font-display-tech uppercase rounded border transition-all active:scale-95 ${
                             isFocusPeaking
-                              ? 'border-[#22c55e] bg-[#22c55e]/15 text-[#22c55e]'
-                              : 'border-white/10 text-neutral-400'
+                              ? 'border-[#22c55e] bg-[#22c55e]/20 text-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.3)]'
+                              : 'border-white/10 bg-neutral-850 text-neutral-400'
                           }`}
                         >
                           PEAK
@@ -674,7 +695,7 @@ export function WorkflowSection() {
                     </div>
                     <button
                       onClick={() => { setColorHue(0); setColorSat(100); }}
-                      className="w-full py-0.5 bg-white/5 border border-white/10 hover:border-white/20 rounded text-[6px] text-white uppercase text-center"
+                      className="w-full py-1 bg-neutral-850 border border-white/12 hover:border-white/20 active:scale-95 active:bg-white/10 rounded text-[7.5px] font-display-tech text-white uppercase text-center transition-all shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
                     >
                       reset
                     </button>

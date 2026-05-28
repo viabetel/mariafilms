@@ -274,8 +274,16 @@ export function CinematicPortal() {
   }, [isFormOpen, isMobile]);
 
   // Responsive values for aperture scale and lens rotation based on scroll progress
-  const apertureRadius = progress < 0.12 ? 12 : 12 + Math.pow((progress - 0.12) / 0.88, 1.8) * 138;
-  const lensScale = progress < 0.12 ? 1 : 1 + Math.pow((progress - 0.12) / 0.88, 1.8) * 11.5;
+  const baseAperture = isMobile ? 21 : 12; // Em vw, para casar com a abertura do blueprint no mobile/desktop
+  const scaleExponent = isMobile ? 1.2 : 1.8;
+  const lensScaleMultiplier = isMobile ? 14 : 11.5;
+
+  const lensScale = progress < 0.12 
+    ? 1 
+    : 1 + Math.pow((progress - 0.12) / 0.88, scaleExponent) * lensScaleMultiplier;
+
+  // Sincroniza a abertura da máscara com a escala da lente
+  const apertureRadius = baseAperture * lensScale;
   const rotationDeg = progress * 480;
 
   // Helper functions for step styles
@@ -289,7 +297,7 @@ export function CinematicPortal() {
     return {
       opacity,
       display: active ? 'flex' : 'none',
-      filter: `blur(${blur}px)`,
+      filter: isMobile ? 'none' : `blur(${blur}px)`,
     };
   };
 
@@ -303,7 +311,7 @@ export function CinematicPortal() {
     return {
       opacity,
       display: active ? 'flex' : 'none',
-      filter: `blur(${blur}px)`,
+      filter: isMobile ? 'none' : `blur(${blur}px)`,
     };
   };
 
@@ -317,7 +325,7 @@ export function CinematicPortal() {
     return {
       opacity,
       display: active ? 'flex' : 'none',
-      filter: `blur(${blur}px)`,
+      filter: isMobile ? 'none' : `blur(${blur}px)`,
     };
   };
 
@@ -330,7 +338,7 @@ export function CinematicPortal() {
     return {
       opacity,
       display: active ? 'flex' : 'none',
-      filter: `blur(${blur}px)`,
+      filter: isMobile ? 'none' : `blur(${blur}px)`,
       transform: `translateY(${translateY}px)`,
     };
   };
@@ -361,6 +369,7 @@ export function CinematicPortal() {
         <div 
           className="absolute pointer-events-none w-72 h-72 md:w-96 md:h-96 transition-all duration-75 ease-out text-white/40"
           style={{
+            ...(isMobile ? { width: '75vw', height: '75vw' } : {}),
             transform: `rotate(${rotationDeg}deg) scale(${lensScale})`,
             opacity: progress > 0.85 ? Math.max(0, 1 - (progress - 0.85) * 10) : 1,
           }}

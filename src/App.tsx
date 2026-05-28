@@ -29,7 +29,7 @@ function App() {
     const container = scrollytellingRef.current;
     if (!container) return;
 
-    const targets = [0.0, 0.25, 0.54, 0.62, 0.705, 0.79, 0.87, 0.955];
+    const targets = [0.0, 0.25, 0.476, 0.567, 0.664, 0.761, 0.852, 0.949];
     const maxStep = targets.length - 1;
 
     const getCurrentStepIndex = (currentProgress: number) => {
@@ -239,7 +239,7 @@ function App() {
   }, []);
 
   // Mapeamento do progresso ativo da Câmera 360 após a cortina do Showreel abrir
-  const activeProgress = progress < 0.50 ? 0 : (progress - 0.50) / 0.50;
+  const activeProgress = progress < 0.43 ? 0 : (progress - 0.43) / 0.57;
 
   // Helper styling for scrollytelling step transitions
   const getScrollytellingStyle = (stepProgress: number) => {
@@ -727,7 +727,7 @@ function App() {
                     if (!scrollytellingRef.current) return;
                     const rect = scrollytellingRef.current.getBoundingClientRect();
                     const totalScrollable = rect.height - window.innerHeight;
-                    const targets = [0.54, 0.62, 0.705, 0.79, 0.87, 0.955];
+                    const targets = [0.476, 0.567, 0.664, 0.761, 0.852, 0.949];
                     const targetProgress = targets[idx];
 
                     window.scrollTo({
