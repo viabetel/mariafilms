@@ -83,8 +83,8 @@ export function ScrollytellingCanvas({
       if (ctx && frameList.length > 0) {
         const diff = animRef.current.targetFrame - animRef.current.currentFrame;
         
-        // Easing interpolation (0.045 catchup for smoother inertia deceleration)
-        animRef.current.currentFrame += diff * 0.045;
+        // Easing interpolation (0.095 catchup for smoother inertia deceleration)
+        animRef.current.currentFrame += diff * 0.095;
 
         // Apply a gentle breathing sway to prevent static look when scroll is idle
         const time = performance.now();

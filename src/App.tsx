@@ -392,7 +392,7 @@ function App() {
       <div className="relative w-full h-screen bg-black z-10">
         {heroScroll < 1 && (
           <section
-            className="fixed inset-0 w-full h-screen overflow-hidden bg-black flex items-center pt-24 pb-12"
+            className="fixed inset-0 w-full h-screen overflow-hidden bg-black flex items-center pt-16 md:pt-24 pb-4 md:pb-12"
             style={{
               pointerEvents: heroScroll >= 0.85 ? 'none' : 'auto'
             }}
@@ -421,14 +421,14 @@ function App() {
 
             {/* Typography & Stats Overlay */}
             <div
-              className="relative z-10 container mx-auto px-6 md:px-12 w-full flex flex-col md:flex-row items-center gap-12 min-h-[80vh]"
+              className="relative z-10 container mx-auto px-6 md:px-12 w-full flex flex-col md:flex-row items-center gap-12 min-h-[70vh] md:min-h-[80vh]"
               style={{
                 opacity: 1 - heroScroll * 2,
                 transform: `translateY(-${heroScroll * (isMobile ? 40 : 80)}px)`,
                 transition: 'opacity 0.05s ease-out, transform 0.05s ease-out'
               }}
             >
-              <div className="w-full md:w-[60%] flex flex-col gap-4 md:gap-8 items-start text-left pointer-events-auto">
+              <div className="w-full md:w-[60%] flex flex-col gap-6 md:gap-8 items-start text-left pointer-events-auto">
                 {/* Director Header Badge */}
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden border border-white/12 bg-neutral-900 flex-shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
@@ -452,11 +452,11 @@ function App() {
                 </div>
 
                 {/* Slogan */}
-                <div className="flex flex-col select-none tracking-tight leading-[0.82] gap-1">
-                  <span className="font-serif-editorial italic text-[9vw] md:text-[6vw] font-light text-neutral-400 lowercase leading-[0.9]">
+                <div className="flex flex-col select-none tracking-tight leading-[1.15] md:leading-[0.82] gap-3 md:gap-1">
+                  <span className="font-serif-editorial italic text-[9vw] md:text-[6vw] font-light text-neutral-400 lowercase leading-[1.15] md:leading-[0.95]">
                     esculpindo
                   </span>
-                  <span className="font-display-tech font-extrabold text-[11vw] md:text-[7.5vw] uppercase tracking-tighter text-white leading-[0.82]">
+                  <span className="font-display-tech font-extrabold text-[11vw] md:text-[7.5vw] uppercase tracking-tighter text-white leading-[1.1] md:leading-[0.82]">
                     o tempo.
                   </span>
                 </div>
@@ -708,7 +708,7 @@ function App() {
           </div>
 
           {/* Interactive SVG Sidebar Navigation Dock */}
-          <div className="absolute right-4 md:right-8 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 z-30 select-none bg-neutral-950/45 backdrop-blur-xl border border-white/5 px-2.5 py-5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+          <div className="hidden md:flex absolute right-4 md:right-8 top-1/2 transform -translate-y-1/2 flex-col gap-4 z-30 select-none bg-neutral-950/45 backdrop-blur-xl border border-white/5 px-2.5 py-5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
             {[0, 1, 2, 3, 4, 5].map((idx) => {
               let active = false;
               // Active ranges for the 6 steps

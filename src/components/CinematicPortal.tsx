@@ -582,7 +582,7 @@ export function CinematicPortal() {
         </div>
 
         {/* Interactive SVG Sidebar Navigation Dock */}
-        <div className="absolute right-4 md:right-8 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 z-30 select-none bg-neutral-950/45 backdrop-blur-xl border border-white/5 px-2.5 py-5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        <div className="hidden md:flex absolute right-4 md:right-8 top-1/2 transform -translate-y-1/2 flex-col gap-4 z-30 select-none bg-neutral-950/45 backdrop-blur-xl border border-white/5 px-2.5 py-5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
           {[0, 1, 2, 3].map((idx) => {
             let active = false;
             if (idx === 0) active = progress >= 0.08 && progress < 0.33;
