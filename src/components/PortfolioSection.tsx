@@ -17,7 +17,7 @@ const projects: ProjectItem[] = [
     category: 'reels & tiktok',
     title: 'reels & shorts',
     description: 'criação de vídeos dinâmicos de alta retenção, ganchos rápidos e edições rítmicas para marcas de moda e estilo.',
-    image: '/portfolio_1.webp',
+    image: 'https://lh3.googleusercontent.com/d/1DmwGm2wzjt3zYczDjH2pe0DKBwYFaBoQ',
     details: ['estratégia: engajamento', 'edição: dinâmica', 'formato: 9:16 vertical', 'views: +5m'],
   },
   {
@@ -26,7 +26,7 @@ const projects: ProjectItem[] = [
     category: 'campanhas de marca',
     title: 'filmes comerciais',
     description: 'videomaking de impacto para campanhas publicitárias premium, agregando sofisticação estética e conversão de marca.',
-    image: '/portfolio_2.webp',
+    image: 'https://lh3.googleusercontent.com/d/1LNy8vAtZTxm30y1vRG7saveemilhvcAy',
     details: ['clientes: vogue, audi', 'captação: ágil', 'formato: híbrido', 'ano: 2026'],
   },
   {
@@ -35,7 +35,7 @@ const projects: ProjectItem[] = [
     category: 'histórias reais',
     title: 'mini-docs',
     description: 'contando narrativas expressivas através de pequenos documentários focados na textura orgânica da luz e no fator humano.',
-    image: '/portfolio_3.webp',
+    image: 'https://lh3.googleusercontent.com/d/1A-EunyRpnKt4fAgB-qz6LSFJJdcpOL6T',
     details: ['foco: humanizado', 'direção: maria eduarda', 'formato: cinema', 'status: autoral'],
   },
   {
@@ -44,7 +44,7 @@ const projects: ProjectItem[] = [
     category: 'cultura de empresa',
     title: 'institucionais',
     description: 'vídeos corporativos modernos que conectam a essência da equipe com a visão estratégica dos fundadores.',
-    image: '/portfolio_4.webp',
+    image: 'https://lh3.googleusercontent.com/d/1OLnxaCvcq7T3ejFcCfpn0f9azNtc2Wv_',
     details: ['ano: 2026', 'áudio: som direto', 'equipamento: raw', 'produção: ágil'],
   },
   {
@@ -53,7 +53,7 @@ const projects: ProjectItem[] = [
     category: 'moda & cotidiano',
     title: 'lifestyle films',
     description: 'filmes focados em ritmo urbano, luz prática de fim de tarde e cortes dinâmicos expressando comportamento.',
-    image: '/portfolio_5.webp',
+    image: 'https://lh3.googleusercontent.com/d/1f8x0CRR6dp1MDbXmPhZiKXoGV9agRasr',
     details: ['luz: natural', 'estilo: contemporâneo', 'ritmo: musical', 'grade: fashion'],
   },
   {
@@ -62,7 +62,7 @@ const projects: ProjectItem[] = [
     category: 'narrativa artística',
     title: 'filmes autorais',
     description: 'curta-metragens e experimentos visuais autorais focados em composição geométrica e luz de alto contraste.',
-    image: '/portfolio_6.webp',
+    image: 'https://lh3.googleusercontent.com/d/1ZYEc2WnjfAazH4OSWVPOxI5Nwuw1NGmK',
     details: ['direção: maria eduarda', 'som: imersivo', 'estética: cinema noir', 'ano: 2025'],
   }
 ];

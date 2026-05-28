@@ -89,7 +89,7 @@ export function EditorialSection() {
             {/* Main Portrait Canvas Frame */}
             <div className="overflow-hidden rounded-2xl h-[38vh] md:h-[52vh] w-[75vw] md:w-[350px] max-w-full relative">
               <img
-                src="/maria_portrait.png"
+                src="https://lh3.googleusercontent.com/d/13Fy1QYAYSojvlBgf8TqtYvIAcyaQSliS"
                 alt="Maria Eduarda portrait"
                 className="w-full h-full object-cover object-[center_20%] grayscale contrast-[1.12] brightness-[0.88] transition-transform duration-700 ease-out group-hover:scale-102"
               />

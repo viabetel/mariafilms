@@ -433,7 +433,7 @@ function App() {
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden border border-white/12 bg-neutral-900 flex-shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
                     <img
-                      src="/maria_portrait.png"
+                      src="https://lh3.googleusercontent.com/d/13Fy1QYAYSojvlBgf8TqtYvIAcyaQSliS"
                       alt="Maria Eduarda"
                       className="w-full h-full object-cover object-[center_20%]"
                     />

@@ -99,7 +99,7 @@ export function IntroLoader({ onComplete }: IntroLoaderProps) {
         muted
         playsInline
         className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-screen z-0 pointer-events-none"
-        src="/Efeit Festa.webm"
+        src="https://drive.google.com/uc?export=download&id=1Wm2CodoGzSpFAXqjDdKhj1ShoS68hHpz"
       />
 
       {/* Vinheta radial de contraste escuro para direcionar foco no centro */}

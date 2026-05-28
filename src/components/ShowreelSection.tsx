@@ -437,10 +437,8 @@ export function ShowreelSection() {
           muted
           playsInline
           className="w-full h-full object-cover"
-        >
-          <source src="/Efeit Festa.webm" type="video/webm" />
-          <source src="/Efeit Festa.mp4" type="video/mp4" />
-        </video>
+          src="https://drive.google.com/uc?export=download&id=1Wm2CodoGzSpFAXqjDdKhj1ShoS68hHpz"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black pointer-events-none" />
       </div>
 
@@ -639,7 +637,7 @@ export function ShowreelSection() {
           >
             <video
               ref={videoRef}
-              src="/camera_360_compressed.mp4"
+              src="https://drive.google.com/uc?export=download&id=1zrQ_bgRuISWQnWbCaDa5fGeGi1RhneII"
               className="w-full h-full object-contain flex-grow cursor-pointer"
               onClick={() => handlePlayPause()}
               onTimeUpdate={handleTimeUpdate}

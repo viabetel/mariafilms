@@ -555,7 +555,7 @@ export function WorkflowSection() {
               {/* Visual content of viewfinder */}
               <div className="absolute inset-0 w-full h-full overflow-hidden">
                 <img
-                  src={activeIndex === 0 ? '/portfolio_3.webp' : activeIndex === 1 ? '/portfolio_1.webp' : '/portfolio_2.webp'}
+                  src={activeIndex === 0 ? 'https://lh3.googleusercontent.com/d/1A-EunyRpnKt4fAgB-qz6LSFJJdcpOL6T' : activeIndex === 1 ? 'https://lh3.googleusercontent.com/d/1DmwGm2wzjt3zYczDjH2pe0DKBwYFaBoQ' : 'https://lh3.googleusercontent.com/d/1LNy8vAtZTxm30y1vRG7saveemilhvcAy'}
                   alt="Monitor Preview"
                   className="w-full h-full object-cover transition-transform duration-500 ease-out"
                   style={{
@@ -878,7 +878,7 @@ export function WorkflowSection() {
                 {/* Visual content of viewfinder */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
                   <img
-                    src={activeIndex === 0 ? '/portfolio_3.webp' : activeIndex === 1 ? '/portfolio_1.webp' : '/portfolio_2.webp'}
+                    src={activeIndex === 0 ? 'https://lh3.googleusercontent.com/d/1A-EunyRpnKt4fAgB-qz6LSFJJdcpOL6T' : activeIndex === 1 ? 'https://lh3.googleusercontent.com/d/1DmwGm2wzjt3zYczDjH2pe0DKBwYFaBoQ' : 'https://lh3.googleusercontent.com/d/1LNy8vAtZTxm30y1vRG7saveemilhvcAy'}
                     alt="Monitor Preview"
                     className="w-full h-full object-cover transition-transform duration-500 ease-out"
                     style={{
