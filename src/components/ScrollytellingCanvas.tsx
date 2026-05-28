@@ -86,9 +86,13 @@ export function ScrollytellingCanvas({
         // Easing interpolation (0.08 catchup)
         animRef.current.currentFrame += diff * 0.08;
 
+        // Apply a gentle breathing sway to prevent static look when scroll is idle
+        const time = performance.now();
+        const sway = Math.sin(time / 2200) * 3.2;
+
         const frameIndex = Math.max(
           0,
-          Math.min(frameList.length - 1, Math.round(animRef.current.currentFrame))
+          Math.min(frameList.length - 1, Math.round(animRef.current.currentFrame + sway))
         );
 
         const currentImg = frameList[frameIndex];
@@ -96,14 +100,8 @@ export function ScrollytellingCanvas({
           drawImageCover(ctx, currentImg);
         }
 
-        // If not caught up yet, keep animating
-        if (Math.abs(diff) > 0.05) {
-          requestAnimationFrame(render);
-        } else {
-          // Snap and stop loop to save CPU/GPU cycles
-          animRef.current.currentFrame = animRef.current.targetFrame;
-          isAnimatingRef.current = false;
-        }
+        // Always keep animating to display the idle sway
+        requestAnimationFrame(render);
       } else {
         isAnimatingRef.current = false;
       }

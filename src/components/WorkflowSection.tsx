@@ -8,6 +8,7 @@ interface WorkflowStep {
   subtitle: string;
   description: string;
   specs: string[];
+  icon: React.ReactNode;
 }
 
 const steps: WorkflowStep[] = [
@@ -18,6 +19,11 @@ const steps: WorkflowStep[] = [
     subtitle: 'a estratégia do primeiro segundo',
     description: 'antes de iniciar as gravações, desenhamos a estratégia do conteúdo. estruturamos roteiros dinâmicos focados nos primeiros 3 segundos (hooks de atenção) e organizamos a grade de ideias para tiktok, reels e youtube shorts.',
     specs: ['roteirização', 'estratégia de gancho', 'análise de concorrência', 'decupagem de roteiro'],
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6 text-[#ff007f]/40 group-hover:text-[#ff007f] transition-colors duration-500">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+      </svg>
+    )
   },
   {
     num: '02',
@@ -26,6 +32,11 @@ const steps: WorkflowStep[] = [
     subtitle: 'imagens que geram engajamento',
     description: 'gravamos com equipamentos ágeis e portáteis de alta performance. focamos na captação de iluminação prática, enquadramentos modernos e transições orgânicas em câmera, garantindo que o material bruto seja dinâmico e otimizado para o consumo em tela vertical.',
     specs: ['luz prática', 'transições em câmera', 'framing vertical (mobile)', 'áudio direcional'],
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6 text-[#ff007f]/40 group-hover:text-[#ff007f] transition-colors duration-500">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+      </svg>
+    )
   },
   {
     num: '03',
@@ -34,6 +45,11 @@ const steps: WorkflowStep[] = [
     subtitle: 'o ritmo acelerado que magnetiza',
     description: 'na edição de vídeo, construímos a retenção da audiência. aplicamos cortes precisos no ritmo da música, efeitos sonoros (SFX) comerciais, legendas dinâmicas sincronizadas e um color grading vibrante para destacar a marca nas redes sociais.',
     specs: ['cortes de ritmo', 'legendas dinâmicas', 'sound design comercial', 'color grading ativo'],
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6 text-[#ff007f]/40 group-hover:text-[#ff007f] transition-colors duration-500">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+      </svg>
+    )
   }
 ];
 
@@ -85,7 +101,7 @@ export function WorkflowSection() {
           <span className="text-neutral-500 text-[10px] uppercase tracking-[0.3em] font-display-tech font-semibold">
             processo criativo //
           </span>
-          <h2 className="hero-title text-white font-medium text-[8vw] md:text-[4vw] leading-none lowercase">
+          <h2 className="font-display-tech text-white font-medium text-[8vw] md:text-[4vw] leading-tight tracking-tighter lowercase">
             como criamos valor
           </h2>
           <p className="text-xs md:text-sm text-neutral-400 max-w-md lowercase font-sans leading-relaxed mt-2">
@@ -140,7 +156,7 @@ export function WorkflowSection() {
                       {step.num}
                     </span>
                   </div>
-                  <h3 className="hero-title text-white text-xl md:text-2xl font-medium tracking-tight leading-none lowercase">
+                  <h3 className="font-display-tech text-white text-xl md:text-2xl font-semibold tracking-tight leading-snug lowercase">
                     {step.title}
                   </h3>
                   <span className="text-[10px] font-sans font-light italic text-neutral-400 lowercase">
@@ -150,12 +166,29 @@ export function WorkflowSection() {
 
                 {/* Description Card */}
                 <div 
-                  className={`w-full p-5 rounded-2xl border bg-white/[0.01] backdrop-blur-xl border-white/5 transition-all duration-500 relative overflow-hidden group-hover:border-white/10 flex-grow md:min-h-[200px] ${
-                    isActive ? 'border-[#ff007f]/25 bg-white/[0.02] shadow-[0_12px_40px_rgba(0,0,0,0.4)]' : ''
+                  className={`w-full p-5 rounded-2xl border transition-all duration-500 relative overflow-hidden group-hover:border-white/10 flex-grow md:min-h-[200px] ${
+                    isActive 
+                      ? 'border-[#ff007f]/45 bg-[#0a0a0a]/80 shadow-[0_0_30px_rgba(255,0,127,0.12)] ring-1 ring-[#ff007f]/10' 
+                      : 'border-white/5 bg-[#0a0a0a]/30'
                   }`}
                 >
-                  {/* Visual accent bar */}
-                  <div className="absolute top-0 left-0 w-[2px] h-0 bg-[#ff007f] transition-all duration-500 group-hover:h-full" />
+                  {/* Card Header visual HUD */}
+                  <div className="flex justify-between items-center mb-4">
+                    {/* Visual accent bar */}
+                    <div className="absolute top-0 left-0 w-[2px] h-0 bg-[#ff007f] transition-all duration-500 group-hover:h-full" />
+                    
+                    {/* Active Status Glow Dot */}
+                    <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${
+                      isActive ? 'bg-[#ff007f] shadow-[0_0_8px_#ff007f] animate-pulse' : 'bg-white/10'
+                    }`} />
+
+                    {/* SVG Icon */}
+                    <div className={`transition-all duration-500 ${
+                      isActive ? 'opacity-100 scale-110' : 'opacity-30 scale-95 group-hover:opacity-100 group-hover:scale-105'
+                    }`}>
+                      {step.icon}
+                    </div>
+                  </div>
                   
                   <p className="text-xs md:text-[13px] text-neutral-400 leading-relaxed lowercase mb-4">
                     {step.description}

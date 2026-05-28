@@ -1,9 +1,15 @@
 import { useRef, useState, useEffect } from 'react';
+import { useScrollProgress } from '../hooks/useScrollProgress';
+
+// More dramatic jagged tear with deeper amplitude for realism
+const topClip = 'polygon(0 0, 100% 0, 100% 48%, 96% 52%, 92% 47%, 88% 54%, 84% 46%, 80% 53%, 76% 48%, 72% 55%, 68% 45%, 64% 52%, 60% 47%, 56% 54%, 52% 46%, 48% 53%, 44% 48%, 40% 55%, 36% 45%, 32% 52%, 28% 47%, 24% 54%, 20% 46%, 16% 53%, 12% 48%, 8% 55%, 4% 47%, 0 51%)';
+const bottomClip = 'polygon(0 51%, 4% 47%, 8% 55%, 12% 48%, 16% 53%, 20% 46%, 24% 54%, 28% 47%, 32% 52%, 36% 45%, 40% 55%, 44% 48%, 48% 53%, 52% 46%, 56% 54%, 60% 47%, 64% 52%, 68% 45%, 72% 55%, 76% 48%, 80% 53%, 84% 46%, 88% 54%, 92% 47%, 96% 52%, 100% 48%, 100% 100%, 0 100%)';
 
 export function ShowreelSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const bgVideoRef = useRef<HTMLVideoElement>(null);
+  const bgVideoRef1 = useRef<HTMLVideoElement>(null);
+  const bgVideoRef2 = useRef<HTMLVideoElement>(null);
   const progressContainerRef = useRef<HTMLDivElement>(null);
   const progressFillRef = useRef<HTMLDivElement>(null);
   const timeTextRef = useRef<HTMLSpanElement>(null);
@@ -36,49 +42,30 @@ export function ShowreelSection() {
 
   const lockRef = useRef(false);
 
-  // Active scroll-jacking snap for ShowreelSection
+  // Gentle entry snap — only locks section to viewport top when entering
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
       if (isOpen) return;
-
-      const rect = container.getBoundingClientRect();
-
       if (lockRef.current) {
         e.preventDefault();
         return;
       }
 
+      const rect = container.getBoundingClientRect();
       const delta = e.deltaY;
 
-      if (delta > 0) {
-        // ROLANDO PARA BAIXO
-        if (rect.top > 2 && rect.top < window.innerHeight * 0.45) {
-          e.preventDefault();
-          lockRef.current = true;
-          window.scrollTo({
-            top: window.scrollY + rect.top,
-            behavior: 'smooth'
-          });
-          setTimeout(() => {
-            lockRef.current = false;
-          }, 800);
-        }
-      } else if (delta < 0) {
-        // ROLANDO PARA CIMA
-        if (rect.bottom < window.innerHeight - 2 && rect.bottom > window.innerHeight * 0.55) {
-          e.preventDefault();
-          lockRef.current = true;
-          window.scrollTo({
-            top: window.scrollY + rect.top,
-            behavior: 'smooth'
-          });
-          setTimeout(() => {
-            lockRef.current = false;
-          }, 800);
-        }
+      // Snap to top when section is entering viewport from below
+      if (delta > 0 && rect.top > 2 && rect.top < window.innerHeight * 0.45) {
+        e.preventDefault();
+        lockRef.current = true;
+        window.scrollTo({
+          top: window.scrollY + rect.top,
+          behavior: 'smooth'
+        });
+        setTimeout(() => { lockRef.current = false; }, 600);
       }
     };
 
@@ -89,45 +76,24 @@ export function ShowreelSection() {
 
     const handleTouchMove = (e: TouchEvent) => {
       if (isOpen) return;
-
-      const rect = container.getBoundingClientRect();
-
       if (lockRef.current) {
         e.preventDefault();
         return;
       }
 
-      const touchEndY = e.touches[0].clientY;
-      const deltaY = touchStartY - touchEndY; // positivo = scroll para baixo
-
+      const rect = container.getBoundingClientRect();
+      const deltaY = touchStartY - e.touches[0].clientY;
       if (Math.abs(deltaY) < 20) return;
 
-      if (deltaY > 0) {
-        // DESLIZANDO PARA BAIXO
-        if (rect.top > 2 && rect.top < window.innerHeight * 0.45) {
-          e.preventDefault();
-          lockRef.current = true;
-          window.scrollTo({
-            top: window.scrollY + rect.top,
-            behavior: 'smooth'
-          });
-          setTimeout(() => {
-            lockRef.current = false;
-          }, 800);
-        }
-      } else if (deltaY < 0) {
-        // DESLIZANDO PARA CIMA
-        if (rect.bottom < window.innerHeight - 2 && rect.bottom > window.innerHeight * 0.55) {
-          e.preventDefault();
-          lockRef.current = true;
-          window.scrollTo({
-            top: window.scrollY + rect.top,
-            behavior: 'smooth'
-          });
-          setTimeout(() => {
-            lockRef.current = false;
-          }, 800);
-        }
+      // Snap to top when section is entering viewport
+      if (deltaY > 0 && rect.top > 2 && rect.top < window.innerHeight * 0.45) {
+        e.preventDefault();
+        lockRef.current = true;
+        window.scrollTo({
+          top: window.scrollY + rect.top,
+          behavior: 'smooth'
+        });
+        setTimeout(() => { lockRef.current = false; }, 600);
       }
     };
 
@@ -199,12 +165,14 @@ export function ShowreelSection() {
 
   // Play/pause background video based on lightbox state
   useEffect(() => {
-    if (bgVideoRef.current) {
-      if (isOpen) {
-        bgVideoRef.current.pause();
-      } else {
-        bgVideoRef.current.play().catch(() => {});
-      }
+    const v1 = bgVideoRef1.current;
+    const v2 = bgVideoRef2.current;
+    if (isOpen) {
+      v1?.pause();
+      v2?.pause();
+    } else {
+      v1?.play().catch(() => {});
+      v2?.play().catch(() => {});
     }
   }, [isOpen]);
 
@@ -326,90 +294,190 @@ export function ShowreelSection() {
     }
   };
 
+  const progress = useScrollProgress(containerRef);
+  // Starts splitting at 5% and completes fully at 75% — giving time for the full reveal
+  const splitProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.70));
+  // Eased progress for cinematic feel (ease-in-out cubic)
+  const easedSplit = splitProgress < 0.5
+    ? 4 * splitProgress * splitProgress * splitProgress
+    : 1 - Math.pow(-2 * splitProgress + 2, 3) / 2;
+
+  const renderContent = (bgVideoRef: React.RefObject<HTMLVideoElement | null>) => (
+    <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
+      {/* Background video */}
+      <div className="absolute inset-0 w-full h-full opacity-40 transition-all duration-700 ease-in-out filter grayscale hover:grayscale-0 hover:scale-[1.02] hover:opacity-55">
+        <video
+          ref={bgVideoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        >
+          <source src="/Efeit Festa.webm" type="video/webm" />
+          <source src="/Efeit Festa.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black pointer-events-none" />
+      </div>
+
+      {/* Center Title */}
+      <div className="relative z-10 text-center flex flex-col items-center gap-6 px-6 pointer-events-none select-none">
+        <span className="text-[10px] tracking-[0.4em] text-neutral-400 font-display-tech uppercase font-semibold">
+          [ apresentar // portfólio compilado ]
+        </span>
+        <div className="flex flex-col gap-1 leading-none">
+          <span className="font-serif-editorial italic text-[8vw] md:text-[4.5vw] font-light text-neutral-400 lowercase leading-[0.9]">
+            assista ao
+          </span>
+          <span className="font-display-tech font-extrabold text-[10vw] md:text-[6.5vw] uppercase tracking-tighter text-white">
+            showreel.
+          </span>
+        </div>
+        {isTouchDevice && (
+          <div className="mt-4 flex items-center gap-3 bg-white/10 border border-white/20 backdrop-blur-md px-6 py-3 rounded-full text-white text-xs uppercase tracking-widest font-display-tech font-medium pointer-events-auto">
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-4 h-4 text-[#ff007f]"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <span>toque para assistir</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <>
       <section
         ref={containerRef}
-        className={`relative h-screen w-full bg-black overflow-hidden flex items-center justify-center z-20 ${
-          isTouchDevice ? '' : 'cursor-none'
-        }`}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onClick={handleOpen}
+        className="relative h-[250vh] w-full z-30"
+        style={{ backgroundColor: splitProgress > 0.01 ? 'transparent' : '#000' }}
       >
-        {/* Background video */}
-        <div className="absolute inset-0 w-full h-full opacity-40 transition-all duration-700 ease-in-out filter grayscale hover:grayscale-0 hover:scale-[1.02] hover:opacity-55">
-          <video
-            ref={bgVideoRef}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover"
+        <div
+          className={`sticky top-0 h-screen w-full overflow-hidden bg-transparent ${
+            isTouchDevice ? '' : 'cursor-none'
+          }`}
+          onMouseMove={handleMouseMove}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onClick={handleOpen}
+        >
+          {/* Top Half — slides up and slightly scales for depth */}
+          <div
+            className="absolute inset-0 w-full h-full overflow-hidden will-change-transform"
+            style={{
+              clipPath: topClip,
+              transform: `translateY(-${easedSplit * 115}%) scale(${1 + easedSplit * 0.02})`,
+              filter: easedSplit > 0.1 ? `drop-shadow(0 ${8 + easedSplit * 20}px ${12 + easedSplit * 30}px rgba(0,0,0,0.9))` : 'none',
+              transition: 'filter 0.3s ease-out',
+            }}
           >
-            <source src="/Efeit Festa.webm" type="video/webm" />
-            <source src="/Efeit Festa.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black pointer-events-none" />
-        </div>
-
-        {/* HUD borders/headers */}
-        <div className="absolute top-6 left-6 md:left-10 z-10 text-[9px] font-display-tech tracking-[0.2em] text-neutral-500 uppercase select-none pointer-events-none">
-          system // play_portfolio
-        </div>
-        <div className="absolute top-6 right-6 md:right-10 z-10 text-[9px] font-display-tech tracking-[0.2em] text-neutral-500 uppercase select-none pointer-events-none">
-          aspect // 2.39:1
-        </div>
-        <div className="absolute bottom-6 left-6 md:left-10 z-10 text-[9px] font-display-tech tracking-[0.2em] text-neutral-500 uppercase select-none pointer-events-none">
-          maria films // portfólio 2026
-        </div>
-
-        {/* Center Title */}
-        <div className="relative z-10 text-center flex flex-col items-center gap-6 px-6 pointer-events-none select-none">
-          <span className="text-[10px] tracking-[0.4em] text-neutral-400 font-display-tech uppercase font-semibold">
-            [ apresentar // portfólio compilado ]
-          </span>
-          <div className="flex flex-col gap-1 leading-none">
-            <span className="font-serif-editorial italic text-[8vw] md:text-[4.5vw] font-light text-neutral-400 lowercase leading-[0.9]">
-              assista ao
-            </span>
-            <span className="font-display-tech font-extrabold text-[10vw] md:text-[6.5vw] uppercase tracking-tighter text-white">
-              showreel.
-            </span>
+            <div
+              className="absolute inset-0 w-full h-full will-change-transform"
+              style={{
+                transform: `translateY(${easedSplit * 115}%) scale(${1 / (1 + easedSplit * 0.02)})`,
+              }}
+            >
+              {renderContent(bgVideoRef1)}
+            </div>
           </div>
-          {isTouchDevice && (
-            <div className="mt-4 flex items-center gap-3 bg-white/10 border border-white/20 backdrop-blur-md px-6 py-3 rounded-full text-white text-xs uppercase tracking-widest font-display-tech font-medium pointer-events-auto">
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-4 h-4 text-[#ff007f]"
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              <span>toque para assistir</span>
+
+          {/* Torn edge glow line — top half */}
+          <div
+            className="absolute left-0 w-full pointer-events-none z-40"
+            style={{
+              top: 'calc(50% - 2px)',
+              height: '4px',
+              transform: `translateY(-${easedSplit * 115}%)`,
+              background: easedSplit > 0.02
+                ? `linear-gradient(90deg, transparent, rgba(255,255,255,${0.06 + easedSplit * 0.08}), transparent)`
+                : 'none',
+              boxShadow: easedSplit > 0.02
+                ? `0 0 ${15 + easedSplit * 25}px rgba(255,255,255,${easedSplit * 0.15}), 0 0 ${40 + easedSplit * 40}px rgba(0,0,0,0.9)`
+                : 'none',
+              opacity: Math.min(1, easedSplit * 5),
+            }}
+          />
+
+          {/* Bottom Half — slides down and slightly scales for depth */}
+          <div
+            className="absolute inset-0 w-full h-full overflow-hidden will-change-transform"
+            style={{
+              clipPath: bottomClip,
+              transform: `translateY(${easedSplit * 115}%) scale(${1 + easedSplit * 0.02})`,
+              filter: easedSplit > 0.1 ? `drop-shadow(0 -${8 + easedSplit * 20}px ${12 + easedSplit * 30}px rgba(0,0,0,0.9))` : 'none',
+              transition: 'filter 0.3s ease-out',
+            }}
+          >
+            <div
+              className="absolute inset-0 w-full h-full will-change-transform"
+              style={{
+                transform: `translateY(-${easedSplit * 115}%) scale(${1 / (1 + easedSplit * 0.02)})`,
+              }}
+            >
+              {renderContent(bgVideoRef2)}
+            </div>
+          </div>
+
+          {/* Torn edge glow line — bottom half */}
+          <div
+            className="absolute left-0 w-full pointer-events-none z-40"
+            style={{
+              top: 'calc(50% - 2px)',
+              height: '4px',
+              transform: `translateY(${easedSplit * 115}%)`,
+              background: easedSplit > 0.02
+                ? `linear-gradient(90deg, transparent, rgba(255,255,255,${0.06 + easedSplit * 0.08}), transparent)`
+                : 'none',
+              boxShadow: easedSplit > 0.02
+                ? `0 0 ${15 + easedSplit * 25}px rgba(255,255,255,${easedSplit * 0.15}), 0 0 ${40 + easedSplit * 40}px rgba(0,0,0,0.9)`
+                : 'none',
+              opacity: Math.min(1, easedSplit * 5),
+            }}
+          />
+
+          {/* HUD borders/headers — fade out quickly as curtain opens */}
+          <div 
+            className="absolute top-6 left-6 md:left-10 z-30 text-[9px] font-display-tech tracking-[0.2em] text-neutral-500 uppercase select-none pointer-events-none"
+            style={{ opacity: Math.max(0, 1 - easedSplit * 4) }}
+          >
+            system // play_portfolio
+          </div>
+          <div 
+            className="absolute top-6 right-6 md:right-10 z-30 text-[9px] font-display-tech tracking-[0.2em] text-neutral-500 uppercase select-none pointer-events-none"
+            style={{ opacity: Math.max(0, 1 - easedSplit * 4) }}
+          >
+            aspect // 2.39:1
+          </div>
+          <div 
+            className="absolute bottom-6 left-6 md:left-10 z-30 text-[9px] font-display-tech tracking-[0.2em] text-neutral-500 uppercase select-none pointer-events-none"
+            style={{ opacity: Math.max(0, 1 - easedSplit * 4) }}
+          >
+            maria films // portfólio 2026
+          </div>
+
+          {/* LERP Cursor Follower */}
+          {!isTouchDevice && (
+            <div
+              ref={cursorRef}
+              className="fixed top-0 left-0 w-[90px] h-[90px] rounded-full bg-[#ff007f]/20 border border-[#ff007f] flex items-center justify-center pointer-events-none z-50 transition-opacity duration-300 ease-out flex-col"
+              style={{
+                opacity: 0,
+                transform: 'scale(0.5)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                boxShadow: '0 0 20px rgba(255, 0, 127, 0.4)',
+              }}
+            >
+              <span className="text-[10px] font-bold text-white font-display-tech tracking-wider uppercase">
+                play
+              </span>
             </div>
           )}
         </div>
-
-        {/* LERP Cursor Follower */}
-        {!isTouchDevice && (
-          <div
-            ref={cursorRef}
-            className="fixed top-0 left-0 w-[90px] h-[90px] rounded-full bg-[#ff007f]/20 border border-[#ff007f] flex items-center justify-center pointer-events-none z-50 transition-opacity duration-300 ease-out flex-col"
-            style={{
-              opacity: 0,
-              transform: 'scale(0.5)',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
-              boxShadow: '0 0 20px rgba(255, 0, 127, 0.4)',
-            }}
-          >
-            <span className="text-[10px] font-bold text-white font-display-tech tracking-wider uppercase">
-              play
-            </span>
-          </div>
-        )}
       </section>
 
       {/* Lightbox Video Player */}

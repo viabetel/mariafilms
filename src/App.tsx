@@ -663,7 +663,7 @@ function App() {
       <ShowreelSection />
 
       {/* Scrollytelling / Manifesto Canvas Section */}
-      <section ref={scrollytellingRef} className="relative h-[600vh] bg-black z-20">
+      <section ref={scrollytellingRef} className="relative h-[600vh] bg-black z-20 -mt-[250vh]">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center bg-black">
           <ScrollytellingCanvas scrollProgress={progress} frameCount={130} />
           
