@@ -363,8 +363,10 @@ export function CinematicPortal() {
             muted
             playsInline
             className="absolute inset-0 w-full h-full object-cover scale-105"
-            src="https://drive.google.com/uc?export=download&id=1Wm2CodoGzSpFAXqjDdKhj1ShoS68hHpz"
-          />
+          >
+            <source src="/Efeit Festa.webm" type="video/webm" />
+            <source src="/Efeit Festa.mp4" type="video/mp4" />
+          </video>
           {/* Subtle overlay */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(0,0,0,0.85)_100%)] pointer-events-none mix-blend-multiply opacity-50" />
         </div>

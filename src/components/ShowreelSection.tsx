@@ -437,8 +437,9 @@ export function ShowreelSection() {
           muted
           playsInline
           className="w-full h-full object-cover"
-          src="https://drive.google.com/uc?export=download&id=1zrQ_bgRuISWQnWbCaDa5fGeGi1RhneII"
-        />
+        >
+          <source src="https://drive.google.com/uc?export=download&id=1gaZWmgAsINhBDDP1fMIjibtkaCENNdTO" type="video/webm" />
+        </video>
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black pointer-events-none" />
       </div>
 
@@ -637,13 +638,14 @@ export function ShowreelSection() {
           >
             <video
               ref={videoRef}
-              src="https://drive.google.com/uc?export=download&id=1zrQ_bgRuISWQnWbCaDa5fGeGi1RhneII"
               className="w-full h-full object-contain flex-grow cursor-pointer"
               onClick={() => handlePlayPause()}
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
               playsInline
-            />
+            >
+              <source src="https://drive.google.com/uc?export=download&id=1gaZWmgAsINhBDDP1fMIjibtkaCENNdTO" type="video/webm" />
+            </video>
 
             {/* Custom controls overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black via-black/85 to-transparent flex flex-col gap-4 transition-all duration-300 transform translate-y-0 opacity-100 md:opacity-0 md:translate-y-2 md:group-hover/player:opacity-100 md:group-hover/player:translate-y-0 z-20">
