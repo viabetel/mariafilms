@@ -12,6 +12,10 @@ function App() {
   const scrollytellingRef = useRef<HTMLDivElement>(null);
   const progress = useScrollProgress(scrollytellingRef);
   const scrollytellingLockRef = useRef(false);
+  const lastDeltaRef = useRef(0);
+  const lastWheelTimeRef = useRef(0);
+  const lastTargetStepRef = useRef(0);
+  const lastScrollTriggerTimeRef = useRef(0);
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [loaderComplete, setLoaderComplete] = useState(false);
   const [btnHover, setBtnHover] = useState(false);
@@ -29,7 +33,7 @@ function App() {
     const container = scrollytellingRef.current;
     if (!container) return;
 
-    const targets = [0.0, 0.25, 0.476, 0.567, 0.664, 0.761, 0.852, 0.949];
+    const targets = [0.0, 0.08, 0.24, 0.41, 0.58, 0.74, 0.91];
     const maxStep = targets.length - 1;
 
     const getCurrentStepIndex = (currentProgress: number) => {
@@ -45,50 +49,83 @@ function App() {
 
     const handleWheel = (e: WheelEvent) => {
       const rect = container.getBoundingClientRect();
+      
+      // If we are not fully active within the sticky phase, let native scroll handle it
+      if (rect.top > 2 || rect.bottom < window.innerHeight - 2) {
+        return;
+      }
+
       const totalScrollable = rect.height - window.innerHeight;
       const currentProgress = -rect.top / totalScrollable;
+      const delta = e.deltaY;
+      const absDelta = Math.abs(delta);
 
+      const now = performance.now();
+      
+      // If we haven't scrolled programmatically in the last 800ms, sync our logical step with physical progress
+      if (now - lastScrollTriggerTimeRef.current > 800) {
+        const physicalStep = getCurrentStepIndex(currentProgress);
+        lastTargetStepRef.current = physicalStep >= 0 ? physicalStep : 0;
+      }
+
+      const currentStep = lastTargetStepRef.current;
+      const timeDiff = now - lastWheelTimeRef.current;
+      lastWheelTimeRef.current = now;
+
+      // Filter out low-intensity drift
+      if (absDelta < 5) {
+        e.preventDefault();
+        return;
+      }
+
+      // Check if this is a new scroll swipe:
+      // - No wheel events occurred for 180ms
+      // - Or a sudden spike in scroll velocity (current delta is 80% larger than previous, and above minimum force)
+      const isNewGesture = timeDiff > 180 || (absDelta > lastDeltaRef.current * 1.8 && absDelta > 55);
+      
+      lastDeltaRef.current = absDelta;
+
+      // Block all decaying/inertial wheel events from the same scroll gesture
+      if (!isNewGesture) {
+        e.preventDefault();
+        return;
+      }
+
+      // If we are locked by the safety debounce to start scrolling, block it
       if (scrollytellingLockRef.current) {
         e.preventDefault();
         return;
       }
 
-      const delta = e.deltaY;
-      const currentStep = getCurrentStepIndex(currentProgress);
+      // 180ms brief lock to let the scrollTo animation begin
+      scrollytellingLockRef.current = true;
+      setTimeout(() => {
+        scrollytellingLockRef.current = false;
+      }, 180);
 
       if (delta > 0) {
         // ROLANDO PARA BAIXO
-        if (rect.top <= 2 && rect.bottom >= window.innerHeight - 2) {
-          const nextStep = currentStep + 1;
-
-          if (nextStep <= maxStep) {
-            e.preventDefault();
-            scrollytellingLockRef.current = true;
-            window.scrollTo({
-              top: window.scrollY + rect.top + targets[nextStep] * totalScrollable,
-              behavior: 'smooth'
-            });
-            setTimeout(() => {
-              scrollytellingLockRef.current = false;
-            }, 800);
-          }
+        const nextStep = currentStep + 1;
+        if (nextStep <= maxStep) {
+          e.preventDefault();
+          lastTargetStepRef.current = nextStep;
+          lastScrollTriggerTimeRef.current = performance.now();
+          window.scrollTo({
+            top: window.scrollY + rect.top + targets[nextStep] * totalScrollable,
+            behavior: 'smooth'
+          });
         }
       } else if (delta < 0) {
         // ROLANDO PARA CIMA
-        if (rect.top <= 2 && rect.bottom >= window.innerHeight - 2) {
-          const prevStep = currentStep - 1;
-
-          if (prevStep >= 0) {
-            e.preventDefault();
-            scrollytellingLockRef.current = true;
-            window.scrollTo({
-              top: window.scrollY + rect.top + targets[prevStep] * totalScrollable,
-              behavior: 'smooth'
-            });
-            setTimeout(() => {
-              scrollytellingLockRef.current = false;
-            }, 800);
-          }
+        const prevStep = currentStep - 1;
+        if (prevStep >= 0) {
+          e.preventDefault();
+          lastTargetStepRef.current = prevStep;
+          lastScrollTriggerTimeRef.current = performance.now();
+          window.scrollTo({
+            top: window.scrollY + rect.top + targets[prevStep] * totalScrollable,
+            behavior: 'smooth'
+          });
         }
       }
     };
@@ -239,7 +276,7 @@ function App() {
   }, []);
 
   // Mapeamento do progresso ativo da Câmera 360 após a cortina do Showreel abrir
-  const activeProgress = progress < 0.43 ? 0 : (progress - 0.43) / 0.57;
+  const activeProgress = progress;
 
   // Helper styling for scrollytelling step transitions
   const getScrollytellingStyle = (stepProgress: number) => {
@@ -599,7 +636,7 @@ function App() {
       <ShowreelSection />
 
       {/* Scrollytelling / Manifesto Canvas Section */}
-      <section ref={scrollytellingRef} className="relative h-[800vh] bg-black z-20 -mt-[450vh]">
+      <section ref={scrollytellingRef} className="relative h-[600vh] bg-black z-20 -mt-[300vh]">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center bg-black">
           <ScrollytellingCanvas scrollProgress={activeProgress} frameCount={130} />
           
@@ -727,8 +764,11 @@ function App() {
                     if (!scrollytellingRef.current) return;
                     const rect = scrollytellingRef.current.getBoundingClientRect();
                     const totalScrollable = rect.height - window.innerHeight;
-                    const targets = [0.476, 0.567, 0.664, 0.761, 0.852, 0.949];
+                    const targets = [0.08, 0.24, 0.41, 0.58, 0.74, 0.91];
                     const targetProgress = targets[idx];
+
+                    lastTargetStepRef.current = idx + 1;
+                    lastScrollTriggerTimeRef.current = performance.now();
 
                     window.scrollTo({
                       top: window.scrollY + rect.top + targetProgress * totalScrollable,

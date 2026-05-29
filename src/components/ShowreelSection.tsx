@@ -32,6 +32,7 @@ export function ShowreelSection() {
   const [isMuted, setIsMuted] = useState(false);
 
   const isOpenRef = useRef(isOpen);
+  const splitProgressRef = useRef(0);
 
   const mouseRef = useRef({
     x: 0,
@@ -136,16 +137,19 @@ export function ShowreelSection() {
       mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * ease;
       mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * ease;
       
-      const targetOpacity = mouseRef.current.isHovered ? 1 : 0;
+      // Force fade out the play cursor immediately if the curtain starts opening
+      const isCurtainOpening = splitProgressRef.current > 0.02;
+      const targetOpacity = (mouseRef.current.isHovered && !isCurtainOpening) ? 1 : 0;
       mouseRef.current.opacity += (targetOpacity - mouseRef.current.opacity) * ease;
       
-      const targetScale = mouseRef.current.isHovered ? 1 : 0.5;
+      const targetScale = (mouseRef.current.isHovered && !isCurtainOpening) ? 1 : 0.5;
       mouseRef.current.scale += (targetScale - mouseRef.current.scale) * ease;
 
       cursorRef.current.style.transform = `translate3d(${mouseRef.current.x - 45}px, ${mouseRef.current.y - 45}px, 0) scale(${mouseRef.current.scale})`;
       cursorRef.current.style.opacity = mouseRef.current.opacity.toString();
 
-      const isResting = !mouseRef.current.isHovered && mouseRef.current.opacity < 0.01;
+      // Go to rest if mouse left or curtain is opening, and opacity has fully faded out
+      const isResting = (!mouseRef.current.isHovered || isCurtainOpening) && mouseRef.current.opacity < 0.01;
 
       if (!isResting) {
         requestAnimationFrame(tick);
@@ -189,16 +193,33 @@ export function ShowreelSection() {
 
       const scrolled = -rect.top;
       const progress = Math.max(0, Math.min(1, scrolled / totalScrollable));
-      const splitProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.90));
+      const splitProgress = Math.min(1, Math.max(0, progress / 0.45));
       
-      // Eased progress (ease-in-out cubic)
-      const easedSplit = splitProgress < 0.5
-        ? 4 * splitProgress * splitProgress * splitProgress
-        : 1 - Math.pow(-2 * splitProgress + 2, 3) / 2;
+      // Eased progress (ease-out quadratic for high responsiveness)
+      const easedSplit = 1 - Math.pow(1 - splitProgress, 2);
+
+      // Sync splitProgress to ref for the play cursor loop
+      splitProgressRef.current = splitProgress;
+      if (splitProgress > 0.02) {
+        // Trigger cursor animation to process the fade-out
+        startCursorAnimation();
+      }
+
+      // Smoothly fade out the center titles/buttons as curtains split
+      const centerContents = container.querySelectorAll('.showreel-center-content');
+      const centerOpacity = Math.max(0, 1 - splitProgress * 5).toString();
+      centerContents.forEach((el) => {
+        (el as HTMLElement).style.opacity = centerOpacity;
+      });
 
       // 1. Update container style
       container.style.backgroundColor = splitProgress > 0.01 ? 'transparent' : '#000';
-      container.style.pointerEvents = splitProgress >= 0.95 ? 'none' : 'auto';
+      if (splitProgress >= 0.25) {
+        container.style.pointerEvents = 'none';
+        mouseRef.current.isHovered = false;
+      } else {
+        container.style.pointerEvents = 'auto';
+      }
 
       // 2. Update Top Half
       if (topHalfRef.current) {
@@ -292,8 +313,8 @@ export function ShowreelSection() {
       const v1 = bgVideoRef1.current;
       const v2 = bgVideoRef2.current;
       const progress = Math.max(0, Math.min(1, -rect.top / (rect.height - window.innerHeight)));
-      const splitProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.90));
-      const shouldPlay = inViewport && !isOpen && splitProgress < 0.95;
+      const splitProgress = Math.min(1, Math.max(0, progress / 0.45));
+      const shouldPlay = inViewport && !isOpen && splitProgress < 0.99;
 
       if (v1) {
         if (shouldPlay) v1.play().catch(() => {});
@@ -438,13 +459,13 @@ export function ShowreelSection() {
           playsInline
           className="w-full h-full object-cover"
         >
-          <source src="https://drive.google.com/uc?export=download&id=1gaZWmgAsINhBDDP1fMIjibtkaCENNdTO" type="video/webm" />
+          <source src="https://drive.usercontent.google.com/download?id=1gaZWmgAsINhBDDP1fMIjibtkaCENNdTO&export=download&confirm=t" type="video/webm" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black pointer-events-none" />
       </div>
 
       {/* Center Title */}
-      <div className="relative z-10 text-center flex flex-col items-center gap-6 px-6 pointer-events-none select-none">
+      <div className="showreel-center-content relative z-10 text-center flex flex-col items-center gap-6 px-6 pointer-events-none select-none transition-opacity duration-200">
         <span className="text-[10px] tracking-[0.4em] text-neutral-400 font-display-tech uppercase font-semibold">
           [ apresentar // portfólio compilado ]
         </span>
@@ -476,7 +497,7 @@ export function ShowreelSection() {
     <>
       <section
         ref={containerRef}
-        className="relative h-[450vh] w-full z-30"
+        className="relative h-[300vh] w-full z-30"
         style={{ 
           backgroundColor: '#000',
           pointerEvents: 'auto'
@@ -644,7 +665,7 @@ export function ShowreelSection() {
               onLoadedMetadata={handleLoadedMetadata}
               playsInline
             >
-              <source src="https://drive.google.com/uc?export=download&id=1gaZWmgAsINhBDDP1fMIjibtkaCENNdTO" type="video/webm" />
+              <source src="https://drive.usercontent.google.com/download?id=1gaZWmgAsINhBDDP1fMIjibtkaCENNdTO&export=download&confirm=t" type="video/webm" />
             </video>
 
             {/* Custom controls overlay */}

@@ -18,8 +18,11 @@ export function ScrollytellingCanvas({
   const animRef = useRef({
     currentFrame: 0,
     targetFrame: 0,
+    velocity: 0,
   });
   const isAnimatingRef = useRef(false);
+  const lastProgressRef = useRef(scrollProgress);
+  const cumulativeProgressRef = useRef(0);
 
   // Helper to draw image cover
   const drawImageCover = (
@@ -83,16 +86,27 @@ export function ScrollytellingCanvas({
       if (ctx && frameList.length > 0) {
         const diff = animRef.current.targetFrame - animRef.current.currentFrame;
         
-        // Easing interpolation (0.095 catchup for smoother inertia deceleration)
-        animRef.current.currentFrame += diff * 0.095;
+        // Easing interpolation with velocity-based inertia (second-order smoothing)
+        // targetSpeed controls how fast we track the scroll.
+        // We use asymmetric easing: react fast to scroll changes, but glide/decelerate very slowly when stopping (about 2 seconds longer).
+        const targetSpeed = diff * 0.055;
+        const isStopping = Math.abs(targetSpeed) < 0.05;
+        const easingFactor = isStopping ? 0.015 : 0.075;
+        
+        animRef.current.velocity += (targetSpeed - animRef.current.velocity) * easingFactor;
+        animRef.current.currentFrame += animRef.current.velocity;
 
         // Apply a gentle breathing sway to prevent static look when scroll is idle
         const time = performance.now();
         const sway = Math.sin(time / 2200) * 3.2;
 
+        const totalFrames = frameList.length;
+        let wrappedFrame = animRef.current.currentFrame % totalFrames;
+        if (wrappedFrame < 0) wrappedFrame += totalFrames;
+
         const frameIndex = Math.max(
           0,
-          Math.min(frameList.length - 1, Math.round(animRef.current.currentFrame + sway))
+          Math.min(totalFrames - 1, Math.round(wrappedFrame + sway))
         );
 
         const currentImg = frameList[frameIndex];
@@ -182,7 +196,13 @@ export function ScrollytellingCanvas({
 
   // Update target frame when scrollProgress changes
   useEffect(() => {
-    const target = scrollProgress * (frameCount - 1);
+    const diff = scrollProgress - lastProgressRef.current;
+    
+    // Accumulate absolute changes to rotate camera only forward
+    cumulativeProgressRef.current += Math.abs(diff);
+    lastProgressRef.current = scrollProgress;
+
+    const target = cumulativeProgressRef.current * (frameCount - 1);
     animRef.current.targetFrame = target;
     
     startAnimating();
