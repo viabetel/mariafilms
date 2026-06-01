@@ -62,6 +62,16 @@
   }
 }
 
+/* ---- Proposta (/proposta): tom sério/comercial ----
+   Os títulos da proposta (que no site são Instrument Serif itálico) passam a
+   Fraunces RETA — serifa de mais gravidade, cara de documento. Escopado em
+   .proposal-doc para NÃO afetar o resto do site (que segue cinematográfico). */
+.proposal-doc .font-serif-editorial {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-style: normal;
+  letter-spacing: -0.015em;
+}
+
 /* ---- Grão de filme + vinheta: textura cinematográfica global ---- */
 .film-grain::after {
   content: '';

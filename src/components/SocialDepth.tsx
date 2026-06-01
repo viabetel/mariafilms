@@ -144,11 +144,16 @@ export function SocialDepth() {
     <section ref={sectionRef} className="relative min-h-[150vh] overflow-hidden bg-black">
       {/* CAMADA 0 — fundo (quase parado) */}
       <div className="depth-layer absolute inset-0" data-speed="0.4">
-        <img
-          src="/maria/work-veste.jpg"
-          alt=""
-          className="h-[120%] w-full object-cover"
-          style={{ filter: 'grayscale(0.6) contrast(1.1) brightness(0.35)' }}
+        {/* FILL borrado: cópia ampliada+desfocada preenche a tela toda (sem vão
+            lateral). transform scale evita o "vazamento" do blur nas bordas. */}
+        <div
+          className="absolute left-0 top-0 h-[120%] w-full bg-center bg-no-repeat bg-cover"
+          style={{ backgroundImage: "url('/maria/work-veste.jpg')", filter: 'grayscale(0.7) contrast(1.05) brightness(0.3) blur(40px)', transform: 'scale(1.12)' }}
+        />
+        {/* Foto principal com MENOS zoom no desktop, centralizada sobre o fill */}
+        <div
+          className="absolute left-0 top-0 h-[120%] w-full bg-center bg-no-repeat bg-cover md:bg-[length:auto_140%]"
+          style={{ backgroundImage: "url('/maria/work-veste.jpg')", filter: 'grayscale(0.6) contrast(1.1) brightness(0.4)' }}
         />
         <div className="absolute inset-0 bg-black/40" />
       </div>
@@ -172,7 +177,7 @@ export function SocialDepth() {
           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-pink"><path d="M12 21s-7-4.35-9.5-8.5C.5 9 2 5.5 5.5 5.5c2 0 3.5 1.5 6.5 4.5 3-3 4.5-4.5 6.5-4.5 3.5 0 5 3.5 3 7C19 16.65 12 21 12 21z" /></svg>
           24.8k
         </Chip>
-        <Chip className="absolute right-[22%] top-[58%]">@mariafilms</Chip>
+        <Chip className="absolute right-[22%] top-[58%]">@mariaubaldino.films</Chip>
         <Chip className="absolute left-[20%] top-[70%]">
           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-white"><path d="M21 6h-18v12h4v3l4-3h6z" /></svg>
           1.2k comentários

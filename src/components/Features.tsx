@@ -42,6 +42,14 @@ function FeatureCard({
         gsap.to(imgRef.current, { scale: 1.14, duration: 0.7, ease: EASE.micro });
         gsap.to(cardRef.current, { opacity: 1, duration: 0.5, ease: EASE.micro, overwrite: true });
       }}
+      onMouseMove={(e) => {
+        // spotlight: a luz rosa segue o cursor dentro do card
+        const el = cardRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+        el.style.setProperty('--my', `${e.clientY - r.top}px`);
+      }}
       onMouseLeave={() => {
         // só reseta o zoom da própria foto; o fundo some quando sai da grade
         gsap.to(imgRef.current, { scale: 1, duration: 0.6, ease: EASE.out });
@@ -56,6 +64,11 @@ function FeatureCard({
           style={{ filter: 'grayscale(0.45) contrast(1.05) brightness(0.8)' }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+        {/* spotlight do cursor */}
+        <span
+          className="pointer-events-none absolute inset-0 opacity-0 mix-blend-screen transition-opacity duration-300 group-hover:opacity-100"
+          style={{ background: 'radial-gradient(300px circle at var(--mx, 50%) var(--my, 50%), rgba(255,0,127,0.32), transparent 62%)' }}
+        />
         <span className="absolute left-4 top-4 font-display-tech text-[10px] uppercase tracking-hud text-white/50 transition-colors group-hover:text-pink">
           0{FEATURES.indexOf(feature) + 1}
         </span>

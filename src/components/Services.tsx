@@ -71,13 +71,23 @@ export function Services() {
         {FORMATS.map((f) => (
           <div
             key={f.index}
-            className="sv-card group relative flex min-h-[220px] cursor-pointer flex-col justify-between bg-black p-8 transition-colors duration-500 hover:bg-neutral-950 md:min-h-[260px] md:p-10"
+            onMouseMove={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+              e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+            }}
+            className="sv-card group relative flex min-h-[220px] cursor-pointer flex-col justify-between overflow-hidden bg-black p-8 transition-colors duration-500 hover:bg-neutral-950 md:min-h-[260px] md:p-10"
           >
-            <div className="flex items-start justify-between">
+            {/* spotlight do cursor */}
+            <span
+              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              style={{ background: 'radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), rgba(255,0,127,0.20), transparent 68%)' }}
+            />
+            <div className="relative flex items-start justify-between">
               <span className="font-display-tech text-xs text-neutral-600 transition-colors group-hover:text-pink">{f.index}</span>
               <span className="text-neutral-700 transition-all duration-500 group-hover:translate-x-1 group-hover:text-pink">↗</span>
             </div>
-            <div>
+            <div className="relative">
               <h3 className="font-serif-editorial text-3xl italic lowercase leading-none text-white transition-colors group-hover:text-pink md:text-4xl">
                 {f.title}
               </h3>

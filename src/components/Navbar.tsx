@@ -80,11 +80,17 @@ export function Navbar() {
           <button
             key={l.target}
             onClick={() => scrollToSection(l.target)}
-            className="rounded-full px-5 py-2 font-display-tech text-sm font-medium text-neutral-300 transition-colors hover:text-pink"
+            className="rounded-full px-5 py-2 font-display-tech text-sm font-semibold text-white transition-colors duration-300 hover:bg-white/10 hover:text-pink"
           >
             {l.label}
           </button>
         ))}
+        <a
+          href="/proposta"
+          className="ml-1 flex items-center gap-1 rounded-full bg-pink/10 px-5 py-2 font-display-tech text-sm font-medium text-pink transition-colors hover:bg-pink/20"
+        >
+          proposta <span className="text-xs">↗</span>
+        </a>
       </div>
 
       <MagneticCTA />
