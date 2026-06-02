@@ -1,0 +1,57 @@
+{# Template do CONTRATO (Jinja2 → HTML → WeasyPrint → PDF).
+   NÃO tem IA: o texto jurídico é FIXO; só as {{ lacunas }} recebem dados.
+   O mesmo molde serve para qualquer cliente/versão — muda só o que entra. #}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<style>
+  @page { size: A4; margin: 2.2cm; }
+  body { font-family: "Helvetica", sans-serif; color: #111; font-size: 11pt; line-height: 1.5; }
+  h1 { font-size: 16pt; text-align: center; }
+  .meta { color: #666; font-size: 9pt; text-align: center; margin-bottom: 1.5em; }
+  h2 { font-size: 12pt; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 1.4em; }
+  ul { margin: 0.3em 0; }
+  .assinaturas { margin-top: 3em; display: flex; justify-content: space-between; }
+  .assina { width: 45%; border-top: 1px solid #111; padding-top: 6px; font-size: 9pt; }
+</style>
+</head>
+<body>
+  <h1>Contrato de Prestação de Serviços</h1>
+  <p class="meta">Maria Films · gerado em {{ hoje }} · ref. {{ proposta_ref }}</p>
+
+  <h2>1. Partes</h2>
+  <p><strong>CONTRATADA:</strong> Maria Eduarda (Maria Films), responsável pela produção de conteúdo audiovisual.</p>
+  <p><strong>CONTRATANTE:</strong> {{ cliente.nome }}, inscrito(a) sob o documento {{ cliente.documento }}.</p>
+
+  <h2>2. Objeto</h2>
+  <p>Contratação da versão <strong>{{ plano.code }} — {{ plano.name }}</strong>: {{ plano.tagline }}</p>
+  <p>Entregáveis no período ({{ plano.duracao }}):</p>
+  <ul>
+    {% for item in plano.itens %}
+    <li>{{ item.qtd }}× {{ item.label }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>3. Valor e pagamento</h2>
+  <p>Valor: <strong>{{ plano.preco }}</strong> ({{ plano.observacao }}).</p>
+
+  <h2>4. Cláusulas gerais</h2>
+  <p>Todo conteúdo passa por aprovação da CONTRATANTE antes da publicação. Os direitos
+  de uso seguem o combinado entre as partes. {# ...texto jurídico fixo aqui... #}</p>
+
+  <div class="assinaturas">
+    <div class="assina">Maria Eduarda — CONTRATADA</div>
+    <div class="assina">{{ cliente.nome }} — CONTRATANTE</div>
+  </div>
+
+  {# Bloco de validação preenchido pela AUTENTIQUE após a assinatura eletrônica.
+     A Autentique carimba isto (signatário, data/hora, IP, código verificável). #}
+  <div class="autentique" style="margin-top:2.5em; border:1px solid #ddd; border-radius:6px; padding:12px; font-size:8.5pt; color:#444;">
+    <strong>Assinatura eletrônica · Autentique</strong><br/>
+    Signatário: {{ cliente.nome }} — {{ cliente.documento }} — {{ cliente.email }}<br/>
+    Data/hora: {{ assinatura.data }} · IP: {{ assinatura.ip }}<br/>
+    Código de verificação: <strong>{{ assinatura.codigo }}</strong> · confira em autentique.com.br
+  </div>
+</body>
+</html>
