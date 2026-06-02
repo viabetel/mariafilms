@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* esconde a barra de scroll do carrossel (Portfolio mobile) sem perder o swipe */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@layer base {
+  html {
+    /* O smooth scroll é controlado pelo Lenis; desligamos o nativo para
+       não brigarem. Em reduced-motion o Lenis não inicia e isto reativa. */
+    scroll-behavior: auto;
+  }
+
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #000000;
+    color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: #ff007f;
+    color: #000;
+  }
+}
+
+@layer components {
+  .font-serif-editorial {
+    font-family: 'Instrument Serif', Georgia, serif;
+  }
+
+  .font-display-tech {
+    font-family: 'Sora', sans-serif;
+  }
+
+  .hero-title {
+    font-family: 'Sora', sans-serif;
+    letter-spacing: -0.06em;
+    line-height: 0.82;
+  }
+
+  /* Painel de vidro reutilizável (navbar, cards, dock) */
+  .glass {
+    background-color: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  /* Linha utilitária para esconder texto antes do reveal por máscara.
+     Usado com SplitText: cada linha é clipada e revelada de baixo. */
+  .mask-line {
+    overflow: hidden;
+    display: block;
+  }
+}
+
+/* ---- Proposta (/proposta): tom sério/comercial ----
+   Os títulos da proposta (que no site são Instrument Serif itálico) passam a
+   Fraunces RETA — serifa de mais gravidade, cara de documento. Escopado em
+   .proposal-doc para NÃO afetar o resto do site (que segue cinematográfico). */
+.proposal-doc .font-serif-editorial {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-style: normal;
+  letter-spacing: -0.015em;
+}
+
+/* ---- Grão de filme + vinheta: textura cinematográfica global ---- */
+.film-grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grainShift 0.6s steps(2) infinite;
+}
+
+.vignette::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  /* Vinheta SUTIL: zona limpa maior (até 68%) e cantos bem mais leves, pra dar
+     só um respiro cinematográfico nas bordas sem sombrear o conteúdo. */
+  background: radial-gradient(ellipse at center, transparent 68%, rgba(0, 0, 0, 0.28) 100%);
+}
+
+/* No mobile (tela alta), afina ainda mais pra a sombra não alcançar o centro. */
+@media (max-width: 767px) {
+  .vignette::before {
+    background: radial-gradient(ellipse 100% 80% at center, transparent 72%, rgba(0, 0, 0, 0.22) 100%);
+  }
+}
+
+@keyframes grainShift {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(-2%, 1%); }
+  100% { transform: translate(1%, -2%); }
+}
+
+@keyframes soundBar {
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(1); }
+}
+
+.animate-soundbar {
+  animation: soundBar 1s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .film-grain::after { animation: none; }
+  * { scroll-behavior: auto !important; }
+}
