@@ -8,7 +8,7 @@ CLIENT = "sua marca"  # nome do cliente desta proposta
 # Dados legais da CONTRATADA (Maria) — pro contrato. [EDITÁVEL]
 CONTRACTOR = {
     "nome": "Maria Eduarda Ubaldino",
-    "doc": "CPF/CNPJ 000.000.000-00",
+    "doc": "CPF 124.270.116-81",
     "marca": "maria films",
     "cidade": "Juiz de Fora/MG",
 }
