@@ -23,10 +23,10 @@ const REELS = [
 ];
 
 const STATS = [
-  { n: '+2.4M', l: 'views no último reel' },
-  { n: '+180K', l: 'seguidores' },
-  { n: '+85', l: 'filmes entregues' },
-  { n: '+30', l: 'marcas atendidas' },
+  { n: '5 mil', l: 'views' },
+  { n: '+1800', l: 'seguidores' },
+  { n: '100', l: 'filmes entregues' },
+  { n: '100', l: 'marcas atendidas' },
 ];
 
 // Placeholder — trocar pelos nomes/logos reais das marcas (ver formulário).
