@@ -17,7 +17,7 @@ interface Feature {
 }
 
 const FEATURES: Feature[] = [
-  { title: 'olhar autoral', desc: 'direção com assinatura — nada de fórmula pronta.', img: '/maria/work-veste.jpg' },
+  { title: 'olhar autoral', desc: 'direção com assinatura, nada de fórmula pronta.', img: '/maria/work-veste.jpg' },
   { title: 'feito pra circular', desc: 'cada corte pensado para a tela grande e para o feed.', img: '/maria/work-raso.jpg' },
   { title: 'do conceito à pós', desc: 'uma equipe só, do roteiro ao color grading final.', img: '/maria/work-brasil.jpg' },
   { title: 'set ágil', desc: 'estrutura enxuta, captação rápida, zero burocracia.', img: '/maria/maria-2.jpg' },
@@ -161,7 +161,7 @@ export function Features() {
 
       <div className="relative z-10">
         <div className="mb-16">
-          <span className="font-display-tech text-[10px] uppercase tracking-hud text-pink">// por que a maria films</span>
+          <span className="font-display-tech text-[10px] uppercase tracking-hud text-pink">por que a maria films</span>
           <h2 className="feat-title mt-3 font-serif-editorial text-6xl italic lowercase leading-none text-white md:text-8xl">
             diferenciais
           </h2>

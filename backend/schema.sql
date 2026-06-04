@@ -45,5 +45,48 @@ create table if not exists acceptances (
   created_at            timestamptz not null default now()
 );
 
+-- Assinaturas — plano MENSAL = débito automático recorrente no cartão (ex.:
+-- "preapproval" do Mercado Pago). Uma linha por assinatura; as cobranças mensais
+-- que ela gera entram em `payments`. Plano à vista NÃO cria assinatura.
+create table if not exists subscriptions (
+  id                     uuid primary key default gen_random_uuid(),
+  proposal_id            uuid references proposals(id) on delete cascade,
+  plan_id                text not null,             -- v1 | v2 | v3
+  gateway                text not null,             -- mercadopago | pagarme
+  gateway_subscription_id text unique,              -- id da assinatura no gateway
+  monthly_amount         numeric(10,2) not null,    -- valor de cada mensalidade
+  months                 int not null,              -- duração do compromisso (meses)
+  status                 text not null default 'pendente'  -- pendente | ativa | pausada | cancelada | falhou
+                           check (status in ('pendente','ativa','pausada','cancelada','falhou')),
+  created_at             timestamptz not null default now()
+);
+
+-- Pagamentos — gateway BR (Mercado Pago recomendado). Uma linha por COBRANÇA
+-- efetiva: à vista gera 1; assinatura gera 1 por mensalidade debitada (via
+-- webhook). A 1ª libera o acesso. O valor é sempre remontado no servidor pelo
+-- plan_id, nunca vindo do cliente.
+create table if not exists payments (
+  id                 uuid primary key default gen_random_uuid(),
+  proposal_id        uuid references proposals(id) on delete cascade,
+  subscription_id    uuid references subscriptions(id) on delete set null,  -- preenchido quando é mensalidade de assinatura
+  plan_id            text not null,                 -- v1 | v2 | v3
+  gateway            text not null,                 -- mercadopago | pagarme
+  gateway_charge_id  text,                          -- id da cobrança no gateway
+  method             text not null default 'pix'    -- pix | cartao | boleto
+                       check (method in ('pix','cartao','boleto')),
+  amount             numeric(10,2) not null,        -- valor desta cobrança
+  installment_n      int not null default 1,        -- nº da mensalidade (1..N)
+  installment_total  int not null default 1,        -- total de mensalidades do plano
+  status             text not null default 'pendente'  -- pendente | pago | expirado | falhou
+                       check (status in ('pendente','pago','expirado','falhou')),
+  due_at             timestamptz,                   -- vencimento (mensalidade)
+  paid_at            timestamptz,                   -- preenchido pelo webhook do gateway
+  created_at         timestamptz not null default now(),
+  -- idempotência do webhook: o mesmo charge não vira 'pago' duas vezes
+  unique (gateway, gateway_charge_id)
+);
+
 create index if not exists idx_proposals_token on proposals(token);
 create index if not exists idx_acceptances_proposal on acceptances(proposal_id);
+create index if not exists idx_payments_proposal on payments(proposal_id);
+create index if not exists idx_subscriptions_proposal on subscriptions(proposal_id);

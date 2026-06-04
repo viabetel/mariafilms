@@ -16,7 +16,39 @@
 //   POST /api/proposta/pagamento   → Stripe Checkout Session (cobrar após assinar)
 //   webhooks Autentique/Stripe     → avançam o status no Supabase
 //   O navegador NUNCA fala com Autentique/Stripe direto (chaves no backend).
-import { PLANS, type Plan } from './plans';
+import { PLANS, billingPlan, type Plan, type ChargeMethod } from './plans';
+
+// Base do backend FastAPI. Em dev aponta pro uvicorn local; em produção, defina
+// VITE_API_BASE no ambiente de build (domínio do backend).
+const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000';
+// Token do admin (header x-admin-token). .env: VITE_ADMIN_TOKEN. Fallback dev.
+const ADMIN_TOKEN = (import.meta.env.VITE_ADMIN_TOKEN as string | undefined) ?? 'maria-admin-2026';
+
+// Chamada ao backend ADMIN (protegida). Lança em erro → o chamador cai no
+// fallback localStorage, mantendo o painel vivo se o backend estiver fora.
+async function adminFetch(path: string, init?: RequestInit): Promise<unknown> {
+  const resp = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN, ...(init?.headers ?? {}) },
+  });
+  if (!resp.ok) throw new Error(`admin ${resp.status}`);
+  return resp.json();
+}
+// Chamada pública (ações do cliente). Best-effort: nunca derruba a UI.
+async function pubFetch(path: string, init?: RequestInit): Promise<void> {
+  try {
+    await fetch(`${API_BASE}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) } });
+  } catch {
+    /* ignora: o localStorage segura o protótipo */
+  }
+}
+// GET público da proposta do cliente (view segura, sem dados internos). Lança em
+// erro (backend fora / 404) → o chamador decide o fallback.
+async function adminFetchPublicProposal(token: string): Promise<unknown> {
+  const resp = await fetch(`${API_BASE}/api/proposta/${token}`);
+  if (!resp.ok) throw new Error(`proposta ${resp.status}`);
+  return resp.json();
+}
 
 export type ProposalStatus = 'pendente' | 'aguardando_assinatura' | 'assinada' | 'pago' | 'expirada';
 
@@ -31,18 +63,22 @@ export const STATUS_TO_DB: Record<ProposalStatus, string> = {
   expirada: 'expirada',
 };
 
-// ── Máquina de estados do ciclo de vida (fonte única admin ⇄ cliente) ───────
-// Quem dispara cada transição: 'cliente' (na /proposta) ou 'admin' (no painel).
-// O admin pode forçar qualquer status (override consciente); o CLIENTE só segue
-// o caminho natural. Mantém front e backend falando a mesma língua.
-export const LIFECYCLE: Record<ProposalStatus, { next: ProposalStatus[]; by: ('cliente' | 'admin')[] }> = {
+// ── Máquina de estados do ciclo de vida (fonte única admin ⇄ cliente ⇄ sistema) ─
+// Quem dispara cada transição:
+//   'cliente'  age na /proposta (escolhe, aceita, pede o Pix)
+//   'sistema'  = WEBHOOK (Autentique confirma a assinatura, gateway confirma o
+//               pagamento). 'assinada' e 'pago' SÓ entram por aqui — o cliente
+//               jamais afirma "assinei"/"paguei", a verdade vem do servidor.
+//   'admin'    pode forçar qualquer status (override consciente no painel).
+export type Actor = 'cliente' | 'admin' | 'sistema';
+export const LIFECYCLE: Record<ProposalStatus, { next: ProposalStatus[]; by: Actor[] }> = {
   pendente: { next: ['aguardando_assinatura', 'expirada'], by: ['cliente', 'admin'] },
-  aguardando_assinatura: { next: ['assinada', 'expirada'], by: ['cliente', 'admin'] },
-  assinada: { next: ['pago'], by: ['cliente', 'admin'] },
+  aguardando_assinatura: { next: ['assinada', 'expirada'], by: ['sistema', 'admin'] }, // assina via webhook Autentique
+  assinada: { next: ['pago'], by: ['sistema', 'admin'] }, // paga via webhook do gateway
   pago: { next: [], by: ['admin'] },
   expirada: { next: ['pendente'], by: ['admin'] }, // só renovação reabre
 };
-export function canTransition(from: ProposalStatus, to: ProposalStatus, by: 'cliente' | 'admin'): boolean {
+export function canTransition(from: ProposalStatus, to: ProposalStatus, by: Actor): boolean {
   if (by === 'admin') return true; // override do painel é sempre permitido
   const rule = LIFECYCLE[from];
   return rule.next.includes(to) && rule.by.includes(by);
@@ -52,6 +88,7 @@ export interface SignerData {
   nome: string;
   documento: string; // CPF ou CNPJ
   email: string;
+  telefone: string; // telefone / whatsapp do cliente
   planId: string;
 }
 
@@ -59,11 +96,24 @@ export interface ContractResult {
   documentId: string;
   signingUrl: string | null; // link da Autentique (ou null = só por e-mail)
   signerEmail: string;
+  demo: boolean; // true = veio do mock (backend fora). Liga os botões [simular].
 }
 
+// Resultado de INICIAR a cobrança da 1ª parcela após a assinatura. É gateway-
+// agnóstico (Asaas / Mercado Pago / Pagar.me): o front só exibe o Pix (copia-e-
+// cola + QR) ou manda pro checkout de cartão. O status nasce 'pendente' SEMPRE;
+// 'pago' só chega pelo webhook do gateway (markPaid), nunca por este retorno.
 export interface PaymentResult {
-  checkoutUrl: string | null; // link do Stripe Checkout (ou null no mock)
-  status: 'pago';
+  chargeId: string;
+  method: ChargeMethod;
+  amount: number; // valor desta cobrança, remontado no servidor pelo planId
+  installment: number; // parcela 1..N
+  installmentsTotal: number;
+  pixCopiaECola: string | null; // string EMV do Pix (copiar e colar no banco)
+  pixQrCode: string | null; // imagem do QR (data URL) quando Pix
+  checkoutUrl: string | null; // página hospedada do gateway (fluxo de cartão)
+  status: 'pendente';
+  demo: boolean; // true = veio do mock (backend/gateway fora). Liga o [simular].
 }
 
 export interface ProposalInfo {
@@ -73,6 +123,9 @@ export interface ProposalInfo {
   status: ProposalStatus;
   expiresAt: string; // ISO
   blocked?: boolean; // arquivada no admin = página fora do ar pro cliente
+  // link de assinatura (Autentique) persistido no servidor → restaura o iframe
+  // quando o cliente recarrega na etapa de assinatura.
+  contract?: { documentId?: string; signingUrl?: string | null };
 }
 
 export interface ProposalSummary {
@@ -91,7 +144,7 @@ export interface ProposalSummary {
 // ── Linha do tempo / eventos ────────────────────────────────────────────────
 export type ProposalEventType =
   | 'created' | 'edited' | 'viewed' | 'selected' | 'accepted'
-  | 'signed' | 'paid' | 'renewed' | 'archived' | 'unarchived' | 'status_changed';
+  | 'signed' | 'payment_started' | 'paid' | 'renewed' | 'archived' | 'unarchived' | 'status_changed';
 
 export interface ProposalEvent {
   type: ProposalEventType;
@@ -106,6 +159,7 @@ export const EVENT_LABEL: Record<ProposalEventType, string> = {
   selected: 'cliente escolheu uma versão',
   accepted: 'cliente aceitou e gerou contrato',
   signed: 'contrato assinado',
+  payment_started: 'cliente iniciou o pagamento',
   paid: 'pagamento confirmado',
   renewed: 'validade renovada',
   archived: 'arquivada',
@@ -117,18 +171,16 @@ export interface SignerRecord {
   nome: string;
   documento: string;
   email: string;
+  telefone?: string; // contato (whatsapp) do cliente
   consentAt: string; // quando aceitou os termos (LGPD)
   ip?: string;
   userAgent?: string;
 }
 
-// ── CATÁLOGO MOCK (teste) — cada token = uma proposta/estado ────────────────
-//   /proposta?c=studio-lumen        (pendente)
-//   /proposta?c=padaria-aurora      (pendente, 2 versões)
-//   /proposta?c=cliente-assinando   (aguardando assinatura)
-//   /proposta?c=cliente-assinado    (assinado, aguardando pagamento)
-//   /proposta?c=cliente-pago        (pago)
-//   /proposta?c=cliente-expirado    (expirada)
+// ── CATÁLOGO de demonstração ────────────────────────────────────────────────
+// Vazio: trabalhamos só com propostas REAIS (criadas no admin → localStorage, e
+// no futuro no Supabase). Pra pré-visualizar uma proposta sem mandar pro cliente,
+// use o botão "pré-visualizar" no editor (gera um link efêmero). Sem exemplos.
 interface CatalogEntry {
   clienteNome: string;
   intro: string;
@@ -138,15 +190,7 @@ interface CatalogEntry {
   status?: ProposalStatus;
 }
 
-const CATALOG: Record<string, CatalogEntry> = {
-  'padaria-aurora': { clienteNome: 'Padaria Aurora', intro: 'um plano enxuto pra começar a aparecer no digital, sem peso.', planIds: ['v1', 'v2'], days: 7 },
-  'studio-lumen': { clienteNome: 'Studio Lumen', intro: 'presença forte e constante pra uma marca que já tem audiência.', planIds: ['v2', 'v3'], priceOverrides: { v3: 'R$ 1.500' }, days: 5 },
-  'cliente-assinando': { clienteNome: 'Marca Exemplo', intro: '', planIds: ['v1', 'v2', 'v3'], days: 6, status: 'aguardando_assinatura' },
-  'cliente-assinado': { clienteNome: 'Marca Exemplo', intro: '', planIds: ['v1', 'v2', 'v3'], days: 6, status: 'assinada' },
-  'cliente-pago': { clienteNome: 'Marca Exemplo', intro: '', planIds: ['v1', 'v2', 'v3'], days: 6, status: 'pago' },
-  'cliente-expirado': { clienteNome: 'Cliente Exemplo', intro: '', planIds: ['v1', 'v2', 'v3'], days: -1 },
-  'marca-teste': { clienteNome: 'Marca Teste', intro: '', planIds: ['v1', 'v2', 'v3'], days: 7 },
-};
+const CATALOG: Record<string, CatalogEntry> = {};
 
 function buildPlans(entry: { planIds: string[]; priceOverrides?: Record<string, string> }): Plan[] {
   return entry.planIds
@@ -175,7 +219,9 @@ export interface StoredProposal extends ProposalContent {
   selectedPlanId?: string; // versão que o CLIENTE escolheu
   signer?: SignerRecord; // dados do aceite (→ acceptances)
   contract?: { documentId?: string; signingUrl?: string | null; signedPdfPath?: string; signedAt?: string };
-  payment?: { provider: 'stripe'; status: 'pago'; checkoutUrl?: string | null; paidAt?: string };
+  // gateway-agnóstico (Asaas/Mercado Pago/Pagar.me). Acompanha parcelas: a 1ª
+  // paga já libera o acesso; as seguintes ficam agendadas no gateway.
+  payment?: { gateway: 'asaas' | 'mercadopago' | 'pagarme' | 'mock'; method?: ChargeMethod; status: 'pendente' | 'pago'; installmentsTotal: number; installmentsPaid: number; chargeId?: string; paidAt?: string };
   events: ProposalEvent[];
 }
 
@@ -303,14 +349,20 @@ export function clientMessage(token: string, days?: number): string {
   );
 }
 
-/** Cria uma proposta com conteúdo completo → gera código único + link. */
-export function createProposal(content: ProposalContent): { token: string; link: string } {
-  const token = genCode(content.clienteNome);
-  const createdAt = nowIso();
-  const all = readStore();
-  all.unshift({ token, status: 'pendente', createdAt, archived: false, events: [{ type: 'created', at: createdAt }], ...content });
-  writeStore(all);
-  return { token, link: `/proposta?c=${token}` };
+/** Cria uma proposta com conteúdo completo → gera código único + link.
+ *  Backend-first (persiste na Supabase); cai no localStorage se o backend estiver fora. */
+export async function createProposal(content: ProposalContent): Promise<{ token: string; link: string }> {
+  try {
+    const r = (await adminFetch('/api/admin/proposals', { method: 'POST', body: JSON.stringify({ content }) })) as { token: string; link: string };
+    return r;
+  } catch {
+    const token = genCode(content.clienteNome);
+    const createdAt = nowIso();
+    const all = readStore();
+    all.unshift({ token, status: 'pendente', createdAt, archived: false, events: [{ type: 'created', at: createdAt }], ...content });
+    writeStore(all);
+    return { token, link: `/proposta?c=${token}` };
+  }
 }
 
 /** Grava o conteúdo atual numa proposta efêmera e devolve o link de preview.
@@ -324,48 +376,81 @@ export function savePreview(content: ProposalContent): string {
 }
 
 /** Edita uma proposta já criada (mantém código/link, status e trilha). */
-export function updateProposal(token: string, content: ProposalContent): void {
-  mutate(token, (e) => pushEvent({ ...e, ...content }, 'edited'));
+export async function updateProposal(token: string, content: ProposalContent): Promise<void> {
+  try {
+    await adminFetch(`/api/admin/proposals/${token}`, { method: 'PUT', body: JSON.stringify({ content }) });
+  } catch {
+    mutate(token, (e) => pushEvent({ ...e, ...content }, 'edited'));
+  }
 }
 
 /** Carrega o conteúdo de uma proposta criada (para o editor). */
-export function getStored(token: string): ProposalContent | undefined {
-  const e = readStore().find((x) => x.token === token);
-  return e && { clienteNome: e.clienteNome, intro: e.intro, days: e.days, plans: e.plans, notes: e.notes };
+export async function getStored(token: string): Promise<ProposalContent | undefined> {
+  try {
+    const e = (await adminFetch(`/api/admin/proposals/${token}`)) as StoredProposal;
+    return { clienteNome: e.clienteNome, intro: e.intro, days: e.days, plans: e.plans, notes: e.notes };
+  } catch {
+    const e = readStore().find((x) => x.token === token);
+    return e && { clienteNome: e.clienteNome, intro: e.intro, days: e.days, plans: e.plans, notes: e.notes };
+  }
 }
 
-// ── Controles do admin ──────────────────────────────────────────────────────
-export function deleteProposal(token: string): void {
-  writeStore(readStore().filter((e) => e.token !== token));
+// ── Controles do admin (backend-first, fallback localStorage) ────────────────
+export async function deleteProposal(token: string): Promise<void> {
+  try {
+    await adminFetch(`/api/admin/proposals/${token}`, { method: 'DELETE' });
+  } catch {
+    writeStore(readStore().filter((e) => e.token !== token));
+  }
 }
-export function duplicateProposal(token: string): { token: string; link: string } | undefined {
-  const src = readStore().find((e) => e.token === token);
-  if (!src) return undefined;
-  return createProposal({
-    clienteNome: src.clienteNome ? `${src.clienteNome} (cópia)` : '',
-    intro: src.intro,
-    days: src.days,
-    plans: src.plans.map((p) => ({ ...p, items: p.items.map((it) => ({ ...it })), schedule: p.schedule?.map((s) => ({ ...s })) })),
-    notes: src.notes,
-  });
+export async function duplicateProposal(token: string): Promise<{ token: string; link: string } | undefined> {
+  try {
+    return (await adminFetch(`/api/admin/proposals/${token}/duplicate`, { method: 'POST' })) as { token: string; link: string };
+  } catch {
+    const src = readStore().find((e) => e.token === token);
+    if (!src) return undefined;
+    return createProposal({
+      clienteNome: src.clienteNome ? `${src.clienteNome} (cópia)` : '',
+      intro: src.intro,
+      days: src.days,
+      plans: src.plans.map((p) => ({ ...p, items: p.items.map((it) => ({ ...it })), schedule: p.schedule?.map((s) => ({ ...s })) })),
+      notes: src.notes,
+    });
+  }
 }
-export function archiveProposal(token: string, archived: boolean): void {
-  mutate(token, (e) => pushEvent({ ...e, archived }, archived ? 'archived' : 'unarchived'));
+export async function archiveProposal(token: string, archived: boolean): Promise<void> {
+  try {
+    await adminFetch(`/api/admin/proposals/${token}/archive`, { method: 'POST', body: JSON.stringify({ archived }) });
+  } catch {
+    mutate(token, (e) => pushEvent({ ...e, archived }, archived ? 'archived' : 'unarchived'));
+  }
 }
 /** Renova a validade: nova data-base, e tira do estado 'expirada' se preciso. */
-export function renewProposal(token: string, days?: number): void {
-  mutate(token, (e) => {
-    const nextDays = typeof days === 'number' ? days : e.days;
-    const reopened = effectiveStatus(e) === 'expirada' ? 'pendente' : e.status;
-    return pushEvent({ ...e, createdAt: nowIso(), days: nextDays, status: reopened }, 'renewed', { days: String(nextDays) });
-  });
+export async function renewProposal(token: string, days?: number): Promise<void> {
+  try {
+    await adminFetch(`/api/admin/proposals/${token}/renew`, { method: 'POST', body: JSON.stringify({ days }) });
+  } catch {
+    mutate(token, (e) => {
+      const nextDays = typeof days === 'number' ? days : e.days;
+      const reopened = effectiveStatus(e) === 'expirada' ? 'pendente' : e.status;
+      return pushEvent({ ...e, createdAt: nowIso(), days: nextDays, status: reopened }, 'renewed', { days: String(nextDays) });
+    });
+  }
 }
 /** Override manual de status (deal fechado offline, correção). Loga a mudança. */
-export function setStatus(token: string, status: ProposalStatus): void {
-  mutate(token, (e) => pushEvent({ ...e, status }, 'status_changed', { de: e.status, para: status }));
+export async function setStatus(token: string, status: ProposalStatus): Promise<void> {
+  try {
+    await adminFetch(`/api/admin/proposals/${token}/status`, { method: 'POST', body: JSON.stringify({ status }) });
+  } catch {
+    mutate(token, (e) => pushEvent({ ...e, status }, 'status_changed', { de: e.status, para: status }));
+  }
 }
-export function addNote(token: string, notes: string): void {
-  mutate(token, (e) => ({ ...e, notes }));
+export async function addNote(token: string, notes: string): Promise<void> {
+  try {
+    await adminFetch(`/api/admin/proposals/${token}/note`, { method: 'POST', body: JSON.stringify({ notes }) });
+  } catch {
+    mutate(token, (e) => ({ ...e, notes }));
+  }
 }
 
 // ── Detalhe completo (drawer do admin) ──────────────────────────────────────
@@ -444,21 +529,47 @@ function detailFromCatalog(token: string, c: CatalogEntry): ProposalDetail {
 }
 
 export async function getProposalDetail(token: string): Promise<ProposalDetail | null> {
-  await new Promise((r) => setTimeout(r, 120));
-  const st = readStore().find((e) => e.token === token);
-  if (st) return detailFromStored(st);
-  const cat = CATALOG[token.toLowerCase()];
-  if (cat) return detailFromCatalog(token.toLowerCase(), cat);
-  return null;
+  try {
+    const raw = (await adminFetch(`/api/admin/proposals/${token}`)) as Partial<StoredProposal>;
+    return detailFromStored(normalizeEntry(raw));
+  } catch {
+    const st = readStore().find((e) => e.token === token);
+    if (st) return detailFromStored(st);
+    const cat = CATALOG[token.toLowerCase()];
+    if (cat) return detailFromCatalog(token.toLowerCase(), cat);
+    return null;
+  }
 }
 
 /** Carrega a proposta pelo CÓDIGO (token). Código inválido/ausente → null
  *  (o portão "digite seu código" aparece). Sem fallback: cada cliente tem o seu. */
 export async function getProposal(token: string | null): Promise<ProposalInfo | null> {
-  await new Promise((r) => setTimeout(r, 250));
   if (!token) return null;
-  const key = token.toLowerCase();
+  // Tokens são CASE-SENSITIVE (secrets.token_urlsafe gera maiúsculas/minúsculas).
+  // NÃO normalizar caixa: o backend guarda o token exato.
+  const key = token;
   const fallbackIntro = 'conheça as versões e escolha a que faz sentido pra você.';
+  // Backend-first (Supabase): a proposta real do cliente. Só cai no local se a
+  // proposta NÃO existir no backend (ex.: preview efêmero) ou o backend estiver fora.
+  if (key !== PREVIEW_TOKEN) {
+    try {
+      const r = (await adminFetchPublicProposal(key)) as { clienteNome: string; intro?: string; plans?: Plan[]; status?: ProposalStatus; expiresAt?: string; blocked?: boolean; contract?: ProposalInfo['contract'] };
+      if (r && Array.isArray(r.plans) && r.plans.length) {
+        return {
+          clienteNome: r.clienteNome,
+          intro: r.intro || fallbackIntro,
+          plans: r.plans,
+          status: r.status ?? 'pendente',
+          expiresAt: r.expiresAt ?? computeExpiry(nowIso(), 7),
+          blocked: !!r.blocked,
+          contract: r.contract, // link de assinatura p/ restaurar o iframe no reload
+        };
+      }
+    } catch {
+      /* cai no fallback local abaixo */
+    }
+  }
+  await new Promise((r) => setTimeout(r, 100));
   // store primeiro: uma proposta REAL (criada no admin) sempre vence o catálogo.
   const st = readStore().find((e) => e.token === key);
   if (st) {
@@ -491,7 +602,8 @@ export async function getProposal(token: string | null): Promise<ProposalInfo | 
 /** Cliente abriu a proposta (1ª vez registra; depois só atualiza meta). */
 export function markViewed(token: string | null): void {
   if (!token) return;
-  mutate(token.toLowerCase(), (e) => {
+  void pubFetch(`/api/proposta/${token}/viewed`, { method: 'POST' });
+  mutate(token, (e) => {
     const jaViu = e.events.some((ev) => ev.type === 'viewed');
     return jaViu ? e : pushEvent(e, 'viewed');
   });
@@ -500,7 +612,8 @@ export function markViewed(token: string | null): void {
 /** Cliente escolheu uma versão (guarda a escolha; não duplica eventos seguidos). */
 export function selectPlan(token: string | null, planId: string): void {
   if (!token) return;
-  mutate(token.toLowerCase(), (e) => {
+  void pubFetch(`/api/proposta/${token}/select`, { method: 'POST', body: JSON.stringify({ planId }) });
+  mutate(token, (e) => {
     if (e.selectedPlanId === planId) return e;
     return pushEvent({ ...e, selectedPlanId: planId }, 'selected', { planId });
   });
@@ -509,25 +622,39 @@ export function selectPlan(token: string | null, planId: string): void {
 /** Aceite → gera o contrato (WeasyPrint) e cria o documento na Autentique.
  *  Persiste signatário + escolha + status no store (stand-in do POST/contrato). */
 export async function requestContract(token: string | null, data: SignerData): Promise<ContractResult> {
-  await new Promise((r) => setTimeout(r, 1200));
-  const documentId = 'mock-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+  // Tenta o backend real (FastAPI → WeasyPrint molda o contrato + Autentique cria o
+  // documento e devolve o link do cliente). Se o backend não estiver no ar, cai no
+  // mock — assim o protótipo nunca quebra.
+  let result: ContractResult;
+  try {
+    const resp = await fetch(`${API_BASE}/api/proposta/contrato`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, planId: data.planId, nome: data.nome, documento: data.documento, email: data.email }),
+    });
+    if (!resp.ok) throw new Error(`backend ${resp.status}`);
+    const j = await resp.json();
+    result = { documentId: j.documentId, signingUrl: j.signingUrl ?? null, signerEmail: j.signerEmail ?? data.email, demo: false };
+  } catch {
+    await new Promise((r) => setTimeout(r, 1000));
+    result = { documentId: 'mock-' + Math.random().toString(36).slice(2, 8).toUpperCase(), signingUrl: null, signerEmail: data.email, demo: true };
+  }
   if (token) {
-    mutate(token.toLowerCase(), (e) =>
+    mutate(token, (e) =>
       pushEvent(
         {
           ...e,
           selectedPlanId: data.planId,
           status: 'aguardando_assinatura',
-          signer: { nome: data.nome, documento: data.documento, email: data.email, consentAt: nowIso(), userAgent: navigator.userAgent },
-          contract: { documentId, signingUrl: null },
+          signer: { nome: data.nome, documento: data.documento, email: data.email, telefone: data.telefone, consentAt: nowIso(), userAgent: navigator.userAgent },
+          contract: { documentId: result.documentId, signingUrl: result.signingUrl },
         },
         'accepted',
         { planId: data.planId },
       ),
     );
   }
-  return { documentId, signingUrl: null, signerEmail: data.email };
-  // REAL: POST /api/proposta/contrato → { documentId, signingUrl }
+  return result;
 }
 
 /** Assinatura concluída (stand-in do webhook Autentique). */
@@ -538,20 +665,110 @@ export function markSigned(token: string | null): void {
   );
 }
 
-/** Pagamento (após assinatura) → cria o Stripe Checkout. Persiste 'pago'. */
-export async function requestPayment(token: string | null, _planId: string): Promise<PaymentResult> {
-  await new Promise((r) => setTimeout(r, 1200));
+/** Inicia a cobrança da 1ª parcela após a assinatura. NÃO marca 'pago' — isso é
+ *  exclusivo do webhook do gateway (markPaid). Monta a parcela pelo planId; no
+ *  real, o SERVIDOR remonta o valor (jamais confiar no cliente). Devolve o Pix
+ *  (copia-e-cola + QR) ou o checkout de cartão. Status nasce 'pendente'. */
+export async function requestPayment(token: string | null, planId: string): Promise<PaymentResult> {
+  // Backend-first: POST /api/proposta/pagamento → o servidor REMONTA o valor pelo
+  // planId (nunca confia no cliente) e o gateway cria a cobrança Pix/cartão. Se o
+  // backend/gateway estiver fora, cai no mock (demo) pra o protótipo nunca quebrar.
+  let result: PaymentResult;
+  try {
+    const resp = await fetch(`${API_BASE}/api/proposta/pagamento`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, planId }),
+    });
+    if (!resp.ok) throw new Error(`backend ${resp.status}`);
+    const j = await resp.json();
+    result = {
+      chargeId: j.refId,
+      method: j.method ?? 'pix',
+      amount: j.amount,
+      installment: 1,
+      installmentsTotal: j.installmentsTotal ?? 1,
+      pixCopiaECola: j.pixCopiaECola ?? null,
+      pixQrCode: j.pixQrCode ?? null,
+      checkoutUrl: j.checkoutUrl ?? null,
+      status: 'pendente',
+      demo: false,
+    };
+  } catch {
+    await new Promise((r) => setTimeout(r, 1000));
+    const plan = PLANS.find((p) => p.id === planId);
+    const bp = billingPlan(plan ?? { paymentMode: 'avista', totalValue: 0, months: 1 });
+    const first = bp.installments[0];
+    const chargeId = 'chg-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    result = {
+      chargeId,
+      method: 'pix',
+      amount: first.amount,
+      installment: first.n,
+      installmentsTotal: bp.installmentsTotal,
+      // Pix copia-e-cola fake (formato EMV simplificado) só pra UI do protótipo.
+      pixCopiaECola: `00020126MOCKPIX${chargeId}5204000053039865406${Math.round(first.amount * 100)}5802BR`,
+      pixQrCode: null,
+      checkoutUrl: null,
+      status: 'pendente',
+      demo: true,
+    };
+  }
   if (token) {
-    mutate(token.toLowerCase(), (e) =>
-      pushEvent({ ...e, status: 'pago', payment: { provider: 'stripe', status: 'pago', paidAt: nowIso() } }, 'paid'),
+    mutate(token, (e) =>
+      pushEvent(
+        { ...e, payment: { gateway: result.demo ? 'mock' : 'mercadopago', method: result.method, status: 'pendente', installmentsTotal: result.installmentsTotal, installmentsPaid: 0, chargeId: result.chargeId } },
+        'payment_started',
+        { chargeId: result.chargeId, parcela: `1/${result.installmentsTotal}` },
+      ),
     );
   }
-  return { checkoutUrl: null, status: 'pago' };
-  // REAL: POST /api/proposta/pagamento → { checkoutUrl } (Stripe Checkout Session)
+  return result;
 }
 
-/** Lista de propostas para o painel admin (Maria). */
+/** Pagamento confirmado — stand-in do webhook do gateway (payment.received). SÓ
+ *  aqui o status vira 'pago'. No real é disparado pelo webhook, com verificação
+ *  de assinatura + idempotência; conta a parcela paga (a 1ª já libera o acesso). */
+export function markPaid(token: string | null): void {
+  if (!token) return;
+  mutate(token, (e) => {
+    const total = e.payment?.installmentsTotal ?? 1;
+    const paid = Math.min(total, (e.payment?.installmentsPaid ?? 0) + 1);
+    return pushEvent(
+      { ...e, status: 'pago', payment: { gateway: e.payment?.gateway ?? 'mock', method: e.payment?.method ?? 'pix', status: 'pago', installmentsTotal: total, installmentsPaid: paid, chargeId: e.payment?.chargeId, paidAt: nowIso() } },
+      'paid',
+      { parcela: `${paid}/${total}` },
+    );
+  });
+}
+
+/** Mapeia um StoredProposal → resumo do painel (mesma derivação, venha de onde vier). */
+function summaryOf(e: StoredProposal): ProposalSummary {
+  return {
+    token: e.token,
+    clienteNome: e.clienteNome,
+    planId: chosenPlanId(e),
+    status: effectiveStatus(e),
+    createdAt: e.createdAt,
+    expiresAt: computeExpiry(e.createdAt, e.days),
+    archived: !!e.archived,
+    hasSigner: !!e.signer,
+    eventsCount: e.events.length,
+    editable: true,
+  };
+}
+
+/** Lista de propostas para o painel admin (Maria). Backend-first; fallback local. */
 export async function listProposals(): Promise<ProposalSummary[]> {
+  try {
+    const raw = (await adminFetch('/api/admin/proposals')) as Array<Partial<StoredProposal>>;
+    return raw.filter((e) => e.token !== PREVIEW_TOKEN).map((e) => summaryOf(normalizeEntry(e)));
+  } catch {
+    return listProposalsLocal();
+  }
+}
+
+async function listProposalsLocal(): Promise<ProposalSummary[]> {
   await new Promise((r) => setTimeout(r, 200));
   const geradas: ProposalSummary[] = readStore().filter((e) => e.token !== PREVIEW_TOKEN).map((e) => ({
     token: e.token,

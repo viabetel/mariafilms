@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { gsap, SplitText, useGSAP } from '../lib/gsap';
-import { EASE } from '../lib/motion';
 import { SmoothScroll } from '../components/SmoothScroll';
-import { PROCESS, DIFFS, CONTACT, KIND_META, KIND_ORDER, kindOf, generateSchedule, type Plan } from './plans';
-import { getProposal, requestContract, requestPayment, markViewed, selectPlan, markSigned, type ProposalInfo, type ContractResult, type ProposalStatus } from './api';
-import { isValidDocumento, isValidEmail } from './validation';
-import { Target, TrendingUp, Clock, Pencil, Camera, Film, Check, MessageSquare, Calendar, CreditCard, X, type LucideIcon } from './icons';
+import { PROCESS, DIFFS, CONTACT, KIND_META, KIND_ORDER, kindOf, generateSchedule, brl, planTotalValue, billingPlan, type Plan } from './plans';
+import { getProposal, requestContract, requestPayment, markPaid, markViewed, selectPlan, markSigned, type ProposalInfo, type ContractResult, type PaymentResult, type ProposalStatus } from './api';
+import { isValidDocumento, isValidEmail, isValidPhone } from './validation';
+import { Target, TrendingUp, Clock, Pencil, Camera, Film, Check, MessageSquare, Calendar, CreditCard, X, Loader, FileText, type LucideIcon } from './icons';
 
 // PROPOSTA NATIVA,tema CLARO/comercial (documento). É por cliente (token ?c=)
 // e EXPIRA em 7 dias. Só o CONTRATO (gerado no aceite) vira PDF + Autentique.
@@ -38,7 +36,14 @@ const FAQ: [string, string][] = [
   ['os valores incluem tráfego pago?', 'não. o investimento cobre a produção orgânica; mídia paga é à parte e opcional.'],
 ];
 
+// Como o pagamento acontece, por tipo: mensal = assinatura no cartão (débito
+// automático recorrente); à vista = uma vez. Derivado do billingPlan.
+function installmentLabel(plan: Plan): string {
+  return billingPlan(plan).recurring ? 'cobrança automática no cartão todo mês' : 'pagamento único';
+}
+
 function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean; onSelect: () => void }) {
+  const mensal = plan.paymentMode === 'mensal';
   return (
     <button
       onClick={onSelect}
@@ -70,11 +75,22 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
           );
         })}
       </div>
-      <div className="mt-5 border-t border-neutral-200 pt-4">
-        <div className="font-display-tech text-2xl font-bold text-neutral-900">{plan.price}</div>
-        <div className="font-display-tech text-[11px] text-neutral-600">{plan.priceNote} · {plan.perContent}</div>
-        <div className="mt-2 font-display-tech text-[10px] uppercase tracking-widest text-neutral-500">{plan.duration}</div>
-      </div>
+      {mensal ? (
+        <div className="mt-5 border-t border-neutral-200 pt-4">
+          <div className="flex items-baseline gap-1">
+            <span className="font-display-tech text-3xl font-bold text-neutral-900">{brl(plan.monthlyValue ?? 0)}</span>
+            <span className="font-display-tech text-sm font-semibold text-neutral-500">/mês</span>
+          </div>
+          <div className="mt-1 font-display-tech text-xs text-neutral-600">por {plan.months ?? 1} {(plan.months ?? 1) === 1 ? 'mês' : 'meses'} · total {brl(planTotalValue(plan))}</div>
+          <div className="mt-3 rounded-lg bg-neutral-50 px-3 py-2 font-display-tech text-[11px] uppercase tracking-widest text-neutral-500">{installmentLabel(plan)}</div>
+        </div>
+      ) : (
+        <div className="mt-5 border-t border-neutral-200 pt-4">
+          <div className="font-display-tech text-3xl font-bold text-neutral-900">{brl(planTotalValue(plan))}</div>
+          <div className="mt-1 font-display-tech text-xs text-neutral-600">pagamento único · à vista</div>
+          {(plan.months ?? 1) > 1 && <div className="mt-2 font-display-tech text-[10px] uppercase tracking-widest text-neutral-500">entrega ao longo de {plan.months} meses</div>}
+        </div>
+      )}
     </button>
   );
 }
@@ -84,14 +100,53 @@ function LifecycleSteps({ stage }: { stage: ProposalStatus }) {
   const steps = ['contrato', 'assinatura', 'pagamento', 'pronto'];
   const reached = stage === 'pago' ? 4 : stage === 'assinada' ? 3 : stage === 'aguardando_assinatura' ? 2 : 1;
   return (
-    <div className="mb-8 flex items-center justify-center gap-1.5">
+    // gaps/conectores menores no mobile pra a régua das 4 etapas caber em 390px
+    // (antes "contrato"/"pronto" eram cortados nas bordas).
+    <div className="mb-8 flex items-center justify-center gap-0.5 sm:gap-1.5">
       {steps.map((s, i) => (
-        <div key={s} className="flex items-center gap-1.5">
-          <span className={`h-1.5 w-1.5 rounded-full ${i < reached ? 'bg-pink' : 'bg-neutral-300'}`} />
-          <span className={`font-display-tech text-[9px] uppercase tracking-widest ${i < reached ? 'text-neutral-700' : 'text-neutral-300'}`}>{s}</span>
-          {i < steps.length - 1 && <span className={`mx-1 h-px w-5 ${i < reached - 1 ? 'bg-pink' : 'bg-neutral-200'}`} />}
+        <div key={s} className="flex items-center gap-1 sm:gap-1.5">
+          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${i < reached ? 'bg-pink' : 'bg-neutral-300'}`} />
+          <span className={`font-display-tech text-[8px] uppercase tracking-tight sm:tracking-widest sm:text-[9px] ${i < reached ? 'text-neutral-700' : 'text-neutral-300'}`}>{s}</span>
+          {i < steps.length - 1 && <span className={`mx-0.5 h-px w-2.5 sm:mx-1 sm:w-5 ${i < reached - 1 ? 'bg-pink' : 'bg-neutral-200'}`} />}
         </div>
       ))}
+    </div>
+  );
+}
+
+// Overlay enquanto o contrato é moldado (WeasyPrint) + criado na Autentique —
+// leva alguns segundos. Sem isso, o cliente só via o texto do botão mudar e podia
+// achar que travou. As etapas avançam sozinhas pra dar sensação de progresso.
+const GEN_STEPS: [LucideIcon, string][] = [
+  [FileText, 'moldando o seu contrato'],
+  [Pencil, 'preparando a assinatura eletrônica'],
+  [Check, 'quase lá, finalizando'],
+];
+
+function ContractGenerating() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setStep((s) => Math.min(s + 1, GEN_STEPS.length - 1)), 2200);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="proposal-doc fixed inset-0 z-[200] flex flex-col items-center justify-center bg-bone/95 px-6 text-center backdrop-blur-sm" role="status" aria-live="polite">
+      <div className="relative flex h-20 w-20 items-center justify-center">
+        <Loader className="absolute h-20 w-20 animate-spin text-pink/30" strokeWidth={1.2} />
+        <FileText className="h-8 w-8 text-pink" strokeWidth={1.6} />
+      </div>
+      <h2 className="mt-8 font-serif-editorial text-3xl text-neutral-900">gerando seu contrato</h2>
+      <div className="mt-6 flex flex-col items-center gap-3">
+        {GEN_STEPS.map(([Icon, label], i) => (
+          <div key={label} className={`flex items-center gap-2.5 font-display-tech text-sm transition-all duration-500 ${i === step ? 'text-neutral-900' : i < step ? 'text-neutral-400' : 'text-neutral-300'}`}>
+            {i < step
+              ? <Check className="h-4 w-4 text-pink" strokeWidth={2.5} />
+              : <Icon className={`h-4 w-4 ${i === step ? 'text-pink' : ''}`} strokeWidth={1.8} />}
+            <span>{label}{i === step ? '…' : ''}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-8 max-w-xs font-display-tech text-[11px] uppercase tracking-widest text-neutral-400">isso leva só alguns segundos. não feche esta página.</p>
     </div>
   );
 }
@@ -100,10 +155,11 @@ export function ProposalDossier() {
   const rootRef = useRef<HTMLDivElement>(null);
   const [proposal, setProposal] = useState<ProposalInfo | null>(null);
   const [selected, setSelected] = useState<string>('');
-  const [form, setForm] = useState({ nome: '', doc: '', email: '' });
+  const [form, setForm] = useState({ nome: '', doc: '', email: '', tel: '' });
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [result, setResult] = useState<ContractResult | null>(null);
+  const [charge, setCharge] = useState<PaymentResult | null>(null); // cobrança Pix gerada (pendente até o webhook)
   const [stage, setStage] = useState<ProposalStatus>('pendente');
   const [notFound, setNotFound] = useState(false);
   const [codeInput, setCodeInput] = useState(TOKEN ?? '');
@@ -119,9 +175,34 @@ export function ProposalDossier() {
       const first = p.plans[0];
       if (first) setSelected((p.plans.find((x) => x.featured) ?? first).id);
       setStage(p.status); // o cliente pode chegar já num estágio avançado
+      // RELOAD: restaura o link de assinatura vindo do servidor → o iframe volta
+      // (em vez de cair no "modo demonstração") e o demo fica false (proposta real).
+      if (p.contract?.signingUrl) {
+        setResult({ documentId: p.contract.documentId ?? '', signingUrl: p.contract.signingUrl, signerEmail: '', demo: false });
+      }
       markViewed(TOKEN); // registra "cliente abriu" na trilha que o admin lê
     });
   }, []);
+
+  // POLLING do status nas etapas que dependem de WEBHOOK (fonte da verdade no
+  // servidor): 'aguardando_assinatura' → 'assinada' (webhook Autentique, só quando
+  // os DOIS assinam) e 'assinada' → 'pago' (webhook do gateway). O cliente NUNCA
+  // afirma "assinei"/"paguei": a página só observa o status e avança sozinha. Não
+  // roda no modo demo (sem backend, getProposal não muda → seria polling à toa).
+  useEffect(() => {
+    const watching = stage === 'aguardando_assinatura' || stage === 'assinada';
+    const demo = result?.demo ?? false;
+    if (!TOKEN || !watching || demo) return;
+    let alive = true;
+    const id = setInterval(async () => {
+      const p = await getProposal(TOKEN).catch(() => null);
+      if (!alive || !p) return;
+      // só AVANÇA (nunca regride): respeita a ordem do ciclo.
+      const rank: Record<string, number> = { pendente: 0, aguardando_assinatura: 1, assinada: 2, pago: 3 };
+      if ((rank[p.status] ?? 0) > (rank[stage] ?? 0)) setStage(p.status);
+    }, 5000);
+    return () => { alive = false; clearInterval(id); };
+  }, [stage, result]);
 
   // cliente escolhe uma versão: reflete na tela e grava a escolha (trilha do admin)
   const choose = (id: string) => {
@@ -132,7 +213,8 @@ export function ProposalDossier() {
   // abre a proposta pelo código digitado (recarrega com ?c=)
   const openCode = (e: React.FormEvent) => {
     e.preventDefault();
-    const code = codeInput.trim().toLowerCase();
+    // token é case-sensitive (gerado com secrets) → preservar a caixa digitada.
+    const code = codeInput.trim();
     if (code) window.location.href = `/proposta?c=${encodeURIComponent(code)}`;
   };
 
@@ -141,28 +223,18 @@ export function ProposalDossier() {
 
   const docOk = isValidDocumento(form.doc);
   const emailOk = isValidEmail(form.email);
+  const telOk = isValidPhone(form.tel);
   const nomeOk = form.nome.trim().length >= 2;
-  const canSubmit = !expired && nomeOk && docOk && emailOk && consent && status !== 'sending';
+  const canSubmit = !expired && nomeOk && docOk && emailOk && telOk && consent && status !== 'sending';
 
-  useGSAP(
-    () => {
-      if (!proposal || expired) return;
-      gsap.utils.toArray<HTMLElement>('.pp-title').forEach((t) => {
-        const split = new SplitText(t, { type: 'words,chars' });
-        gsap.from(split.chars, { yPercent: 60, opacity: 0, stagger: 0.02, duration: 0.8, ease: EASE.reveal, scrollTrigger: { trigger: t, start: 'top 90%' } });
-      });
-      gsap.utils.toArray<HTMLElement>('.pp-reveal').forEach((el) => {
-        gsap.from(el, { y: 40, opacity: 0, duration: 0.8, ease: EASE.in, scrollTrigger: { trigger: el, start: 'top 90%' } });
-      });
-    },
-    { dependencies: [proposal, expired], scope: rootRef },
-  );
+  // Sem animações de revelação na proposta: o conteúdo fica SEMPRE visível.
+  // (Removido o reveal por GSAP/ScrollTrigger — era a fonte da "tela em branco".)
 
   const submit = async () => {
     if (!canSubmit) return;
     setStatus('sending');
     try {
-      const res = await requestContract(TOKEN, { nome: form.nome.trim(), documento: form.doc.trim(), email: form.email.trim(), planId: selected });
+      const res = await requestContract(TOKEN, { nome: form.nome.trim(), documento: form.doc.trim(), email: form.email.trim(), telefone: form.tel.trim(), planId: selected });
       setResult(res);
       setStage('aguardando_assinatura'); // contrato gerado → cliente assina na Autentique
       setStatus('idle');
@@ -171,15 +243,23 @@ export function ProposalDossier() {
     }
   };
 
+  // gera a cobrança Pix da 1ª parcela. NÃO avança pra 'pago': isso só acontece
+  // quando o webhook do gateway confirma (aqui simulado por confirmPaid).
   const pay = async () => {
     setStatus('sending');
     try {
-      await requestPayment(TOKEN, selected);
-      setStage('pago');
+      const res = await requestPayment(TOKEN, selected);
+      setCharge(res);
       setStatus('idle');
     } catch {
       setStatus('error');
     }
+  };
+  // stand-in do webhook payment.received do gateway (no real, o front faz
+  // polling/realtime do status; nunca afirma o pagamento por conta própria).
+  const confirmPaid = () => {
+    markPaid(TOKEN);
+    setStage('pago');
   };
 
   const field = 'w-full border-b bg-transparent py-3 font-display-tech text-base text-neutral-900 placeholder:text-neutral-500 outline-none transition-colors';
@@ -273,27 +353,72 @@ export function ProposalDossier() {
     return (
       <div className="proposal-doc relative flex min-h-screen flex-col items-center justify-center bg-bone px-6 text-center">
         {backLink}
-        <div className="w-full max-w-md rounded-3xl border border-neutral-200 bg-white p-10 shadow-sm">
+        <div className={`w-full ${stage === 'aguardando_assinatura' ? 'max-w-4xl' : 'max-w-md'} rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-10`}>
           <LifecycleSteps stage={stage} />
           {stage === 'aguardando_assinatura' && (
             <>
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-pink/10 text-pink"><Pencil className="h-7 w-7" strokeWidth={1.6} /></div>
-              <h1 className="mt-6 font-serif-editorial text-4xl text-neutral-900">contrato gerado</h1>
-              <p className="mt-3 font-display-tech text-sm text-neutral-600">revise e assine o contrato da versão <strong className="text-neutral-900">{chosen.code} · {chosen.name}</strong> pela Autentique. assim que assinar, o pagamento é liberado.</p>
-              <a href={result?.signingUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block rounded-full bg-pink px-6 py-3 font-display-tech text-xs font-semibold uppercase tracking-widest text-white hover:shadow-lg">abrir assinatura</a>
-              <button onClick={() => { markSigned(TOKEN); setStage('assinada'); }} className="mt-4 block w-full font-display-tech text-[10px] uppercase tracking-widest text-neutral-500 transition-colors hover:text-pink">[simular] assinatura concluída</button>
+              <h1 className="mt-6 font-serif-editorial text-4xl text-neutral-900">assine seu contrato</h1>
+              <p className="mx-auto mt-3 max-w-lg font-display-tech text-sm text-neutral-600">revise e assine o contrato da versão <strong className="text-neutral-900">{chosen.code} · {chosen.name}</strong> aqui mesmo. a maria contrassina e, com o contrato fechado, o pagamento é liberado.</p>
+              {result?.signingUrl ? (
+                <div className="mt-6">
+                  <iframe src={result.signingUrl} title="assinatura do contrato" className="h-[70vh] w-full rounded-2xl border border-neutral-200 bg-white" allow="camera; microphone" />
+                  <a href={result.signingUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block font-display-tech text-[11px] uppercase tracking-widest text-neutral-500 transition-colors hover:text-pink">prefere tela cheia? abrir em nova aba</a>
+                </div>
+              ) : (
+                // SEM signingUrl = backend fora (o link real vem JUNTO do contrato,
+                // é síncrono). Não é loading — é modo demonstração. Antes ficava num
+                // spinner eterno que parecia travado.
+                <div className="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-6">
+                  <p className="font-display-tech text-sm text-neutral-700">modo demonstração</p>
+                  <p className="mx-auto mt-2 max-w-sm font-display-tech text-[12px] leading-relaxed text-neutral-500">o quadro de assinatura da autentique apareceria aqui. ele só é gerado com o backend no ar (<code className="rounded bg-neutral-200 px-1">uvicorn main:app</code> na pasta <code className="rounded bg-neutral-200 px-1">backend</code>). use o botão abaixo pra simular o avanço.</p>
+                </div>
+              )}
+              {/* Botão de teste SÓ no modo demo (backend fora). Com backend real, a
+                  proposta avança sozinha pelo webhook da Autentique (polling acima). */}
+              {result?.demo && (
+                <button onClick={() => { markSigned(TOKEN); setStage('assinada'); }} className="mt-5 block w-full rounded-full border border-neutral-300 py-2.5 font-display-tech text-[11px] uppercase tracking-widest text-neutral-600 transition-colors hover:border-pink hover:text-pink">[simular] assinatura concluída →</button>
+              )}
             </>
           )}
           {stage === 'assinada' && (
             <>
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600"><Check className="h-8 w-8" strokeWidth={2.5} /></div>
               <h1 className="mt-6 font-serif-editorial text-4xl text-neutral-900">assinado</h1>
-              <p className="mt-3 font-display-tech text-sm text-neutral-600">falta só o pagamento da versão <strong className="text-neutral-900">{chosen.code} · {chosen.name}</strong>.</p>
-              <div className="mt-4 font-display-tech text-3xl font-bold text-neutral-900">{chosen.price}</div>
-              {status === 'error' && <p className="mt-3 font-display-tech text-xs text-red-500">não foi possível iniciar o pagamento. tente de novo.</p>}
-              <button onClick={pay} disabled={status === 'sending'} className={`mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 font-display-tech text-xs font-semibold uppercase tracking-widest text-white ${status === 'sending' ? 'bg-neutral-300' : 'bg-pink hover:shadow-lg'}`}>
-                <CreditCard className="h-4 w-4" strokeWidth={2} /> {status === 'sending' ? 'abrindo pagamento…' : 'pagar com stripe'}
-              </button>
+              {!charge ? (
+                <>
+                  {chosen.paymentMode === 'mensal' ? (
+                    <p className="mt-3 font-display-tech text-sm text-neutral-600">ative o plano <strong className="text-neutral-900">{chosen.code} · {chosen.name}</strong>. no cartão, a mensalidade de <strong className="text-neutral-900">{brl(chosen.monthlyValue ?? 0)}</strong> é debitada automaticamente todo mês por {chosen.months ?? 1} {(chosen.months ?? 1) === 1 ? 'mês' : 'meses'}. prefere Pix? dá pra pagar mês a mês com a gente.</p>
+                  ) : (
+                    <p className="mt-3 font-display-tech text-sm text-neutral-600">falta só o pagamento da versão <strong className="text-neutral-900">{chosen.code} · {chosen.name}</strong>.</p>
+                  )}
+                  <div className="mt-4 font-display-tech text-3xl font-bold text-neutral-900">{chosen.price}</div>
+                  <div className="font-display-tech text-[11px] text-neutral-500">{chosen.priceNote} · {chosen.duration}</div>
+                  {status === 'error' && <p className="mt-3 font-display-tech text-xs text-red-500">não foi possível gerar o pagamento. tente de novo.</p>}
+                  <button onClick={pay} disabled={status === 'sending'} className={`mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 font-display-tech text-xs font-semibold uppercase tracking-widest text-white ${status === 'sending' ? 'bg-neutral-300' : 'bg-pink hover:shadow-lg'}`}>
+                    <CreditCard className="h-4 w-4" strokeWidth={2} /> {status === 'sending' ? 'abrindo…' : chosen.paymentMode === 'mensal' ? 'ativar plano' : 'gerar pix'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {chosen.paymentMode === 'mensal' ? (
+                    <p className="mt-3 font-display-tech text-sm text-neutral-600">pague a 1ª mensalidade de <strong className="text-neutral-900">{brl(chosen.monthlyValue ?? 0)}</strong> no app do seu banco. as próximas entram automático no cartão (ou combinamos o Pix mês a mês).</p>
+                  ) : (
+                    <p className="mt-3 font-display-tech text-sm text-neutral-600">pague no app do seu banco. assim que o pix cair, a gente começa.</p>
+                  )}
+                  <div className="mt-4 font-display-tech text-3xl font-bold text-neutral-900">{chosen.paymentMode === 'mensal' ? brl(chosen.monthlyValue ?? 0) : chosen.price}</div>
+                  <div className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-left">
+                    <span className="font-display-tech text-[10px] uppercase tracking-widest text-neutral-500">{chosen.paymentMode === 'mensal' ? 'pix da 1ª mensalidade' : 'pix copia e cola'}</span>
+                    <p className="mt-2 break-all font-display-tech text-xs text-neutral-700">{charge.pixCopiaECola}</p>
+                    <button onClick={() => charge.pixCopiaECola && navigator.clipboard?.writeText(charge.pixCopiaECola)} className="mt-3 rounded-full border border-neutral-300 px-4 py-2 font-display-tech text-[10px] uppercase tracking-widest text-neutral-600 transition-colors hover:border-pink hover:text-pink">copiar código pix</button>
+                  </div>
+                  {/* Botão de teste SÓ no modo demo. Com gateway real, 'pago' chega
+                      pelo webhook do gateway (polling do status), nunca por clique. */}
+                  {charge?.demo && (
+                    <button onClick={confirmPaid} className="mt-4 block w-full font-display-tech text-[10px] uppercase tracking-widest text-neutral-500 transition-colors hover:text-pink">[simular] pagamento confirmado</button>
+                  )}
+                </>
+              )}
             </>
           )}
           {stage === 'pago' && (
@@ -304,7 +429,11 @@ export function ProposalDossier() {
               <button className="mt-6 rounded-full border border-neutral-300 px-6 py-3 font-display-tech text-xs uppercase tracking-widest text-neutral-600 transition-colors hover:border-pink hover:text-pink">baixar contrato</button>
             </>
           )}
-          <p className="mt-6 font-display-tech text-[10px] uppercase tracking-widest text-neutral-500">[protótipo] integração autentique + stripe entra com o backend</p>
+          {/* nota de protótipo SÓ no modo demo explícito (mock). Com backend real
+              — inclusive ao recarregar uma proposta assinada — fica escondida. */}
+          {(result?.demo || charge?.demo) && (
+            <p className="mt-6 font-display-tech text-[10px] uppercase tracking-widest text-neutral-500">[protótipo] autentique (assinatura) + gateway pix entram com o backend</p>
+          )}
         </div>
       </div>
     );
@@ -312,6 +441,7 @@ export function ProposalDossier() {
 
   return (
     <div ref={rootRef} className="proposal-doc min-h-screen bg-bone text-neutral-900">
+      {status === 'sending' && <ContractGenerating />}
       {backLink}
       <div className="fixed right-4 top-4 z-50 flex items-center gap-2 rounded-full border border-neutral-200 bg-white/85 px-4 py-2 font-display-tech text-[10px] uppercase tracking-widest text-neutral-600 shadow-sm backdrop-blur md:right-8 md:top-6">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-pink" />
@@ -515,32 +645,68 @@ export function ProposalDossier() {
           </div>
 
           <div className="pp-reveal mx-auto mt-12 max-w-3xl rounded-2xl border border-pink/30 bg-pink/[0.04] p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <span className="font-display-tech text-[10px] uppercase tracking-widest text-pink">versão escolhida</span>
                 <div className="font-serif-editorial text-3xl italic lowercase text-neutral-900">{chosen.code} · {chosen.name}</div>
                 <div className="mt-1 font-display-tech text-xs text-neutral-600">{chosen.tagline}</div>
+                {/* o que entra — confirma o pacote bem na hora de aceitar */}
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+                  {chosen.items.map((it) => {
+                    const M = KIND_META[kindOf(it)];
+                    const Ic = M.icon;
+                    return (
+                      <span key={it.label} className="flex items-center gap-1.5 font-display-tech text-xs text-neutral-700">
+                        <span style={{ color: M.color }}><Ic className="h-3.5 w-3.5" strokeWidth={2} /></span>
+                        <span className="font-bold">{it.n}×</span> {it.label}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
               <div className="text-right">
-                <div className="font-display-tech text-3xl font-bold text-neutral-900">{chosen.price}</div>
-                <div className="font-display-tech text-[11px] text-neutral-600">{chosen.priceNote}</div>
+                {chosen.paymentMode === 'mensal' ? (
+                  <>
+                    <div className="font-display-tech text-3xl font-bold text-neutral-900">{brl(chosen.monthlyValue ?? 0)}<span className="text-base font-semibold text-neutral-500">/mês</span></div>
+                    <div className="font-display-tech text-xs text-neutral-600">por {chosen.months ?? 1} {(chosen.months ?? 1) === 1 ? 'mês' : 'meses'} · total {brl(planTotalValue(chosen))}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-display-tech text-3xl font-bold text-neutral-900">{brl(planTotalValue(chosen))}</div>
+                    <div className="font-display-tech text-xs text-neutral-600">pagamento único</div>
+                  </>
+                )}
               </div>
             </div>
+            {chosen.paymentMode === 'mensal' && (
+              <div className="mt-4 flex items-center gap-2 rounded-lg bg-white px-3 py-2 font-display-tech text-[11px] text-neutral-600 ring-1 ring-neutral-200">
+                <Calendar className="h-4 w-4 shrink-0 text-pink" strokeWidth={1.8} /> {installmentLabel(chosen)} · compromisso de {chosen.months ?? 1} {(chosen.months ?? 1) === 1 ? 'mês' : 'meses'}
+              </div>
+            )}
           </div>
 
           <div className="mx-auto mt-8 grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2">
             <input aria-label="nome completo" className={fieldState(nomeOk, form.nome)} placeholder="nome completo" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
             <div>
+              <input aria-label="telefone ou whatsapp" className={fieldState(telOk, form.tel)} type="tel" inputMode="tel" placeholder="telefone / whatsapp" value={form.tel} onChange={(e) => setForm({ ...form, tel: e.target.value })} />
+              {form.tel && !telOk && <span className="mt-1 block font-display-tech text-[10px] text-red-500">telefone inválido (com ddd)</span>}
+            </div>
+            <div>
               <input aria-label="cpf ou cnpj" className={fieldState(docOk, form.doc)} placeholder="cpf / cnpj" value={form.doc} onChange={(e) => setForm({ ...form, doc: e.target.value })} />
               {form.doc && !docOk && <span className="mt-1 block font-display-tech text-[10px] text-red-500">cpf/cnpj inválido</span>}
             </div>
-            <div className="md:col-span-2">
-              <input aria-label="e-mail" className={fieldState(emailOk, form.email)} type="email" placeholder="e-mail (para receber o contrato pela autentique)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <div>
+              <input aria-label="e-mail" className={fieldState(emailOk, form.email)} type="email" placeholder="e-mail (para o contrato)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               {form.email && !emailOk && <span className="mt-1 block font-display-tech text-[10px] text-red-500">e-mail inválido</span>}
             </div>
             <label className="flex cursor-pointer items-start gap-3 md:col-span-2">
               <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-pink" />
-              <span className="font-display-tech text-[11px] leading-relaxed text-neutral-600">concordo com os termos da proposta e autorizo a geração do contrato e o envio para assinatura eletrônica. meus dados serão usados apenas para emissão e assinatura do documento (LGPD).</span>
+              <span className="font-display-tech text-xs leading-relaxed text-neutral-600">
+                {chosen.paymentMode === 'mensal'
+                  ? `concordo com os termos da proposta e com o plano de ${chosen.months ?? 1} ${(chosen.months ?? 1) === 1 ? 'mês' : 'meses'} (${chosen.months ?? 1} ${(chosen.months ?? 1) === 1 ? 'mensalidade' : 'mensalidades'} de ${brl(chosen.monthlyValue ?? 0)}). `
+                  : 'concordo com os termos da proposta. '}
+                autorizo a geração do contrato e o envio para assinatura eletrônica. meus dados serão usados apenas para emissão e assinatura do documento (LGPD).
+              </span>
             </label>
             {status === 'error' && <p className="font-display-tech text-xs text-red-500 md:col-span-2">não foi possível gerar o contrato. tente novamente em instantes.</p>}
             <button

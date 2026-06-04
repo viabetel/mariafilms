@@ -209,12 +209,12 @@ export function SocialDepth() {
 
       {/* CONTEÚDO CENTRAL */}
       <div className="relative z-10 mx-auto flex min-h-[150vh] max-w-4xl flex-col items-center justify-center px-6 text-center">
-        <span className="font-display-tech text-[10px] uppercase tracking-hud text-pink">// presença & prova</span>
+        <span className="font-display-tech text-[10px] uppercase tracking-hud text-pink">presença & prova</span>
         <h2 className="sd-title mt-4 font-display-tech text-5xl font-extrabold uppercase leading-[0.9] tracking-tighter text-white md:text-7xl">
           não é só<br />portfólio.<br />é audiência.
         </h2>
         <p className="mt-6 max-w-md font-display-tech text-sm lowercase leading-relaxed text-white/70">
-          cada filme nasce pra circular. dirigimos pensando no impacto — da tela grande ao scroll do feed.
+          cada filme nasce pra circular. dirigimos pensando no impacto, da tela grande ao scroll do feed.
         </p>
 
         <div className="sd-stats mt-12 grid grid-cols-2 gap-x-12 gap-y-8 md:grid-cols-4">

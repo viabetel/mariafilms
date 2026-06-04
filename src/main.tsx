@@ -16,6 +16,9 @@ const ProposalDossier = lazy(() =>
 const AdminPanel = lazy(() =>
   import('./proposal/AdminPanel.tsx').then((m) => ({ default: m.AdminPanel })),
 );
+const AdminGate = lazy(() =>
+  import('./proposal/AdminGate.tsx').then((m) => ({ default: m.AdminGate })),
+);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -25,7 +28,9 @@ createRoot(document.getElementById('root')!).render(
       </Suspense>
     ) : isAdmin ? (
       <Suspense fallback={<div style={{ background: '#f4f1ea', height: '100vh' }} />}>
-        <AdminPanel />
+        <AdminGate>
+          <AdminPanel />
+        </AdminGate>
       </Suspense>
     ) : (
       <App />

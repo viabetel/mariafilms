@@ -78,14 +78,14 @@ export function Editorial() {
 
         {/* Declaração */}
         <div className="ab-copy md:col-span-7 md:pl-8">
-          <span className="ab-fade font-display-tech text-[10px] uppercase tracking-hud text-pink">// quem dirige</span>
+          <span className="ab-fade font-display-tech text-[10px] uppercase tracking-hud text-pink">quem dirige</span>
           <h2 className="ab-name mt-4 font-serif-editorial text-5xl italic lowercase leading-[0.9] text-bone md:text-7xl">
             prazer, maria.
           </h2>
 
           <p className="ab-fade mt-8 max-w-lg font-display-tech text-base leading-relaxed text-neutral-300 md:text-lg">
             diretora e fotógrafa. há mais de oito anos transformo encontros, marcas e
-            histórias em filme — sempre atrás do instante que ninguém mais viu.
+            histórias em filme, sempre atrás do instante que ninguém mais viu.
           </p>
           <p className="ab-fade mt-5 max-w-lg font-display-tech text-sm leading-relaxed text-neutral-500">
             não acredito em fórmula. cada projeto começa de uma escuta: o que essa

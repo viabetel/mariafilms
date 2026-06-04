@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { savePreview, defaultContent, type ProposalContent } from './api';
 import {
-  generateSchedule, defaultWeeks, kindOf, KIND_META, KIND_ORDER, WEEKDAYS,
-  type Plan, type DeliverableKind, type Weekday, type DeliverableItem, type ScheduleEntry,
+  generateSchedule, defaultWeeks, kindOf, deriveDisplay, sumItems, brl, planTotalValue,
+  KIND_META, KIND_ORDER, WEEKDAYS,
+  type Plan, type DeliverableKind, type Weekday, type DeliverableItem, type ScheduleEntry, type PaymentMode,
 } from './plans';
 
 // Editor de proposta: edita cliente, intro, validade, anotação interna e CADA
@@ -12,6 +13,25 @@ import {
 
 const inp = 'w-full min-w-0 rounded-lg border border-neutral-300 bg-white px-3 py-2 font-display-tech text-sm text-neutral-900 outline-none focus:border-pink';
 const lbl = 'font-display-tech text-[10px] uppercase tracking-widest text-neutral-500';
+
+// Número que dá pra APAGAR e redigitar: 0/indefinido vira campo vazio em vez de
+// travar num valor fixo. O valor real é coerido na hora de usar (deriveDisplay,
+// totais), então um campo vazio durante a digitação nunca quebra a conta.
+const numVal = (x: number | undefined) => (x ? String(x) : '');
+const numParse = (v: string) => {
+  const n = parseFloat(v);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+};
+// Dropdown com a cara do projeto (sem o combobox cinza do sistema): tira a seta
+// nativa (appearance-none) e desenha a nossa em SVG.
+const selectBase = 'cursor-pointer appearance-none pr-9';
+const selectChevron = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 0.6rem center',
+  backgroundSize: '12px',
+} as const;
 
 export function ProposalEditor({
   initial,
@@ -29,28 +49,33 @@ export function ProposalEditor({
   const [c, setC] = useState<ProposalContent>(initial);
 
   const set = <K extends keyof ProposalContent>(k: K, v: ProposalContent[K]) => setC((p) => ({ ...p, [k]: v }));
+  // Quando o cálculo automático está ligado, qualquer mudança em valor/meses/
+  // entregáveis re-deriva preço, total, duração e "por conteúdo". É o "amarrar".
+  const recalc = (pl: Plan): Plan => (pl.autoPrice === true ? { ...pl, ...deriveDisplay(pl) } : pl);
   const setPlan = (i: number, patch: Partial<Plan>) =>
-    setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === i ? { ...pl, ...patch } : pl)) }));
+    setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === i ? recalc({ ...pl, ...patch }) : pl)) }));
   const setItem = (pi: number, ii: number, patch: Partial<DeliverableItem>) =>
     setC((p) => ({
       ...p,
-      plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, items: pl.items.map((it, j) => (j === ii ? { ...it, ...patch } : it)) } : pl)),
+      plans: p.plans.map((pl, idx) => (idx === pi ? recalc({ ...pl, items: pl.items.map((it, j) => (j === ii ? { ...it, ...patch } : it)) }) : pl)),
     }));
-  const addItem = (pi: number) => setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, items: [...pl.items, { label: 'novo entregável', n: 1, kind: 'reels' as DeliverableKind }] } : pl)) }));
+  const addItem = (pi: number) => setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? recalc({ ...pl, items: [...pl.items, { label: 'novo entregável', n: 1, kind: 'reels' as DeliverableKind }] }) : pl)) }));
 
   // ── cronograma da versão ──────────────────────────────────────────────────
   const patchPlanSched = (pi: number, sched: ScheduleEntry[]) =>
     setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, schedule: sched } : pl)) }));
   const genSchedule = (pi: number) => setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, schedule: generateSchedule(pl) } : pl)) }));
   const clearSchedule = (pi: number) => patchPlanSched(pi, []);
-  const setWeeks = (pi: number, weeks: number) => setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, weeks: Math.max(1, weeks || 1) } : pl)) }));
+  // guarda o valor cru (inclusive 0/vazio durante a digitação); o nº efetivo de
+  // semanas é resolvido na renderização com piso no defaultWeeks.
+  const setWeeks = (pi: number, weeks: number) => setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, weeks: Math.max(0, weeks | 0) } : pl)) }));
   const addEntry = (pi: number, week: number) =>
     setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, schedule: [...(pl.schedule ?? []), { id: Math.random().toString(36).slice(2, 8), week, day: 'ter' as Weekday, kind: 'reels' as DeliverableKind }] } : pl)) }));
   const setEntry = (pi: number, id: string, patch: Partial<ScheduleEntry>) =>
     setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, schedule: (pl.schedule ?? []).map((s) => (s.id === id ? { ...s, ...patch } : s)) } : pl)) }));
   const removeEntry = (pi: number, id: string) =>
     setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, schedule: (pl.schedule ?? []).filter((s) => s.id !== id) } : pl)) }));
-  const removeItem = (pi: number, ii: number) => setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? { ...pl, items: pl.items.filter((_, j) => j !== ii) } : pl)) }));
+  const removeItem = (pi: number, ii: number) => setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => (idx === pi ? recalc({ ...pl, items: pl.items.filter((_, j) => j !== ii) }) : pl)) }));
   const removePlan = (i: number) => setC((p) => ({ ...p, plans: p.plans.filter((_, idx) => idx !== i) }));
   const setFeatured = (i: number) => setC((p) => ({ ...p, plans: p.plans.map((pl, idx) => ({ ...pl, featured: idx === i ? !pl.featured : false })) }));
   const movePlan = (i: number, dir: -1 | 1) =>
@@ -67,7 +92,7 @@ export function ProposalEditor({
       ...p,
       plans: [
         ...p.plans,
-        { id: 'custom-' + Math.random().toString(36).slice(2, 7), code: 'V' + (p.plans.length + 1), name: 'nova versão', tagline: '', total: 0, totalLabel: 'conteúdos', items: [], duration: '', price: 'R$ 0', priceNote: '', perContent: '' },
+        recalc({ id: 'custom-' + Math.random().toString(36).slice(2, 7), code: 'V' + (p.plans.length + 1), name: 'nova versão', tagline: '', total: 0, totalLabel: 'conteúdos', items: [], duration: '', price: 'R$ 0', priceNote: '', perContent: '', paymentMode: 'avista', totalValue: 0, months: 1, autoPrice: true }),
       ],
     }));
 
@@ -100,7 +125,7 @@ export function ProposalEditor({
           </div>
           <div>
             <label className={lbl}>validade (dias)</label>
-            <input type="number" min={1} className={`${inp} w-24`} value={c.days} onChange={(e) => set('days', Math.max(1, +e.target.value || 7))} />
+            <input type="number" min={1} className={`${inp} w-24`} value={numVal(c.days)} placeholder="7" onChange={(e) => set('days', numParse(e.target.value))} />
           </div>
         </div>
         <div className="mt-4">
@@ -139,29 +164,20 @@ export function ProposalEditor({
 
               <input className={`${inp} mt-3`} value={pl.tagline} onChange={(e) => setPlan(i, { tagline: e.target.value })} placeholder="frase curta da versão" />
 
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
-                <div><label className={lbl}>preço</label><input className={inp} value={pl.price} onChange={(e) => setPlan(i, { price: e.target.value })} /></div>
-                <div><label className={lbl}>obs. preço</label><input className={inp} value={pl.priceNote} onChange={(e) => setPlan(i, { priceNote: e.target.value })} /></div>
-                <div><label className={lbl}>duração</label><input className={inp} value={pl.duration} onChange={(e) => setPlan(i, { duration: e.target.value })} /></div>
-                <div><label className={lbl}>por conteúdo</label><input className={inp} value={pl.perContent} onChange={(e) => setPlan(i, { perContent: e.target.value })} /></div>
-              </div>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div><label className={lbl}>total (nº)</label><input type="number" min={0} className={inp} value={pl.total} onChange={(e) => setPlan(i, { total: +e.target.value || 0 })} /></div>
-                <div><label className={lbl}>rótulo do total</label><input className={inp} value={pl.totalLabel} onChange={(e) => setPlan(i, { totalLabel: e.target.value })} /></div>
-              </div>
-
-              {/* entregáveis */}
+              {/* CONTEÚDO primeiro: o que entrega (entregáveis) define o nº de
+                  conteúdos; o cronograma distribui esses mesmos itens. Ficam juntos
+                  porque um amarra o outro. O comercial (valores) vem depois. */}
               <div className="mt-4">
                 <label className={lbl}>entregáveis</label>
                 <div className="mt-2 flex flex-col gap-2">
                   {pl.items.map((it, j) => (
                     <div key={j} className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <div className="flex items-center gap-2 sm:flex-1">
-                        <input type="number" min={0} className={`${inp} !w-14 shrink-0 text-center`} value={it.n} onChange={(e) => setItem(i, j, { n: +e.target.value || 0 })} />
+                        <input type="number" min={0} className={`${inp} !w-14 shrink-0 text-center`} value={numVal(it.n)} placeholder="0" onChange={(e) => setItem(i, j, { n: numParse(e.target.value) })} />
                         <input className={`${inp} flex-1`} value={it.label} onChange={(e) => setItem(i, j, { label: e.target.value })} placeholder="ex.: Reels" />
                       </div>
                       <div className="flex items-center gap-2">
-                        <select value={kindOf(it)} onChange={(e) => setItem(i, j, { kind: e.target.value as DeliverableKind })} className={`${inp} flex-1 sm:w-32 sm:flex-none`} title="tipo de conteúdo">
+                        <select value={kindOf(it)} onChange={(e) => setItem(i, j, { kind: e.target.value as DeliverableKind })} className={`${inp} ${selectBase} flex-1 sm:w-32 sm:flex-none`} style={selectChevron} title="tipo de conteúdo">
                           {KIND_ORDER.map((k) => <option key={k} value={k}>{KIND_META[k].label}</option>)}
                         </select>
                         <button onClick={() => removeItem(i, j)} className="shrink-0 font-display-tech text-[11px] text-neutral-500 hover:text-red-500">remover</button>
@@ -182,6 +198,67 @@ export function ProposalEditor({
                 onSet={(id, patch) => setEntry(i, id, patch)}
                 onRemove={(id) => removeEntry(i, id)}
               />
+
+              {/* COMO O CLIENTE PAGA — o botão que molda a versão. Único OU
+                  mensalidade. Tudo que o cliente vê (preço, total, duração) DERIVA
+                  daqui via deriveDisplay → nada de campo livre que se contradiz. */}
+              <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
+                <label className={lbl}>como o cliente paga esta versão</label>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {([
+                    ['avista', 'pagamento único', 'paga uma vez'],
+                    ['mensal', 'mensalidade', 'paga todo mês'],
+                  ] as const).map(([m, titulo, sub]) => {
+                    const on = m === 'mensal' ? pl.paymentMode === 'mensal' : pl.paymentMode !== 'mensal';
+                    return (
+                      <button
+                        key={m}
+                        onClick={() => setPlan(i, { paymentMode: m as PaymentMode, autoPrice: true })}
+                        className={`rounded-xl border px-4 py-3 text-left transition-colors ${on ? 'border-pink bg-pink/[0.04] ring-1 ring-pink' : 'border-neutral-300 hover:border-neutral-400'}`}
+                      >
+                        <div className={`font-display-tech text-sm font-bold ${on ? 'text-pink' : 'text-neutral-800'}`}>{titulo}</div>
+                        <div className="font-display-tech text-[11px] text-neutral-500">{sub}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* só os campos que esse tipo precisa — rótulos sem ambiguidade */}
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {pl.paymentMode === 'mensal' ? (
+                    <div>
+                      <label className={lbl}>valor da mensalidade (R$)</label>
+                      <input type="number" min={0} step="any" className={inp} value={numVal(pl.monthlyValue)} placeholder="0" onChange={(e) => setPlan(i, { monthlyValue: numParse(e.target.value), autoPrice: true })} />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className={lbl}>valor total (R$)</label>
+                      <input type="number" min={0} step="any" className={inp} value={numVal(pl.totalValue)} placeholder="0" onChange={(e) => setPlan(i, { totalValue: numParse(e.target.value), autoPrice: true })} />
+                    </div>
+                  )}
+                  <div>
+                    <label className={lbl}>{pl.paymentMode === 'mensal' ? 'por quantos meses' : 'período de entrega (meses)'}</label>
+                    <input type="number" min={1} className={inp} value={numVal(pl.months)} placeholder="1" onChange={(e) => setPlan(i, { months: numParse(e.target.value), autoPrice: true })} />
+                  </div>
+                </div>
+
+                {/* resumo humano + números derivados: a MESMA conta que o cliente vê */}
+                <div className="mt-4 rounded-lg bg-white p-3 ring-1 ring-neutral-200">
+                  <p className="font-display-tech text-xs text-neutral-700">
+                    {pl.paymentMode === 'mensal' ? (
+                      <>o cliente paga <strong>{brl(pl.monthlyValue ?? 0)}</strong> por mês durante <strong>{pl.months ?? 1} {(pl.months ?? 1) === 1 ? 'mês' : 'meses'}</strong>, somando <strong>{brl(planTotalValue(pl))}</strong>.</>
+                    ) : (
+                      <>o cliente paga <strong>{brl(planTotalValue(pl))}</strong> uma única vez{(pl.months ?? 1) > 1 ? <> (entrega ao longo de <strong>{pl.months} meses</strong>)</> : ''}.</>
+                    )}
+                  </p>
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                    <div><div className="font-display-tech text-base font-bold text-neutral-900">{sumItems(pl.items)}</div><div className="font-display-tech text-[9px] uppercase tracking-widest text-neutral-500">conteúdos</div></div>
+                    <div><div className="font-display-tech text-base font-bold text-neutral-900">{pl.paymentMode === 'mensal' ? `${brl(pl.monthlyValue ?? 0)}/mês` : brl(planTotalValue(pl))}</div><div className="font-display-tech text-[9px] uppercase tracking-widest text-neutral-500">{pl.paymentMode === 'mensal' ? 'mensalidade' : 'à vista'}</div></div>
+                    <div><div className="font-display-tech text-base font-bold text-neutral-900">{brl(planTotalValue(pl))}</div><div className="font-display-tech text-[9px] uppercase tracking-widest text-neutral-500">total</div></div>
+                  </div>
+                </div>
+                <p className="mt-2 font-display-tech text-[11px] text-neutral-500">o nº de conteúdos vem dos entregáveis acima. preço, total e duração da proposta se montam sozinhos a partir daqui.</p>
+              </div>
             </div>
           ))}
           {c.plans.length === 0 && <p className="rounded-lg border border-dashed border-neutral-300 py-6 text-center font-display-tech text-sm text-neutral-500">sem versões. adicione uma ou restaure as padrão.</p>}
@@ -224,9 +301,23 @@ function ScheduleEditor({
   onRemove: (id: string) => void;
 }) {
   const sched = plan.schedule ?? [];
-  const wk = plan.weeks ?? defaultWeeks(plan);
+  const wk = plan.weeks && plan.weeks > 0 ? plan.weeks : defaultWeeks(plan);
   const weeks = Array.from({ length: wk }, (_, i) => i + 1);
   const cell = 'min-w-0 rounded-lg border border-neutral-300 bg-white px-2 py-1.5 font-display-tech text-sm text-neutral-900 outline-none focus:border-pink';
+
+  // AMARRAÇÃO conteúdo ⇄ cronograma: o cronograma é a distribuição dos entregáveis.
+  // Confere total E por tipo; se não bate (ex.: 12 artes nos entregáveis, 2 no
+  // cronograma) avisa e oferece sincronizar num clique. Sem isso, o calendário que
+  // o cliente vê pode contradizer o pacote.
+  const itemsTotal = sumItems(plan.items);
+  const kindRows = KIND_ORDER
+    .map((k) => ({
+      k,
+      want: plan.items.filter((it) => kindOf(it) === k).reduce((s, it) => s + Math.max(0, it.n | 0), 0),
+      have: sched.filter((s) => s.kind === k).length,
+    }))
+    .filter((r) => r.want > 0 || r.have > 0);
+  const drift = sched.length > 0 && kindRows.some((r) => r.want !== r.have);
 
   return (
     <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
@@ -234,7 +325,7 @@ function ScheduleEditor({
         <label className={`${lbl} flex items-center gap-2`}>
           cronograma
           <span className="flex items-center gap-1 normal-case tracking-normal text-neutral-600">
-            <input type="number" min={1} max={26} value={wk} onChange={(e) => onWeeks(+e.target.value)} className="w-14 rounded border border-neutral-300 px-2 py-1 text-center text-neutral-900" /> semanas
+            <input type="number" min={1} max={26} value={numVal(plan.weeks)} placeholder={String(defaultWeeks(plan))} onChange={(e) => onWeeks(numParse(e.target.value))} className="w-14 rounded border border-neutral-300 px-2 py-1 text-center text-neutral-900" /> semanas
           </span>
         </label>
         <div className="flex items-center gap-2">
@@ -242,6 +333,19 @@ function ScheduleEditor({
           {sched.length > 0 && <button onClick={onClear} className="font-display-tech text-[11px] uppercase tracking-widest text-neutral-500 hover:text-red-500">limpar</button>}
         </div>
       </div>
+
+      <div className="mt-2 font-display-tech text-[11px] text-neutral-500">{sched.length} de {itemsTotal} conteúdos distribuídos</div>
+      {drift && (
+        <div className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
+          <p className="font-display-tech text-[11px] font-semibold text-amber-700">o cronograma não bate com os entregáveis</p>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
+            {kindRows.filter((r) => r.want !== r.have).map((r) => (
+              <span key={r.k} className="font-display-tech text-[11px] text-amber-700">{KIND_META[r.k].label}: {r.have}/{r.want}</span>
+            ))}
+          </div>
+          <button onClick={onGen} className="mt-2 rounded-full bg-amber-600 px-3 py-1.5 font-display-tech text-[10px] font-semibold uppercase tracking-widest text-white hover:bg-amber-700">sincronizar com os entregáveis</button>
+        </div>
+      )}
 
       {sched.length === 0 ? (
         <p className="mt-3 font-display-tech text-[11px] text-neutral-500">sem cronograma ainda. clique em "gerar automaticamente" pra distribuir os entregáveis pelas semanas, depois ajuste.</p>
@@ -261,10 +365,10 @@ function ScheduleEditor({
                     <div key={s.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <div className="flex items-center gap-2">
                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: KIND_META[s.kind].color }} />
-                        <select value={s.day} onChange={(e) => onSet(s.id, { day: e.target.value as Weekday })} className={`${cell} flex-1 sm:w-20 sm:flex-none`}>
+                        <select value={s.day} onChange={(e) => onSet(s.id, { day: e.target.value as Weekday })} className={`${cell} ${selectBase} flex-1 sm:w-20 sm:flex-none`} style={selectChevron}>
                           {WEEKDAYS.map((d) => <option key={d} value={d}>{d}</option>)}
                         </select>
-                        <select value={s.kind} onChange={(e) => onSet(s.id, { kind: e.target.value as DeliverableKind })} className={`${cell} flex-1 sm:w-36 sm:flex-none`}>
+                        <select value={s.kind} onChange={(e) => onSet(s.id, { kind: e.target.value as DeliverableKind })} className={`${cell} ${selectBase} flex-1 sm:w-36 sm:flex-none`} style={selectChevron}>
                           {KIND_ORDER.map((k) => <option key={k} value={k}>{KIND_META[k].label}</option>)}
                         </select>
                       </div>

@@ -143,7 +143,7 @@ export function TransitionBridge() {
 
         {/* Frase da passagem */}
         <div className="bridge-text absolute inset-0 z-10 flex flex-col items-center justify-center px-6 text-center opacity-0">
-          <span className="mb-4 font-display-tech text-[10px] uppercase tracking-hud text-pink">// o corte final ganha o mundo</span>
+          <span className="mb-4 font-display-tech text-[10px] uppercase tracking-hud text-pink">o corte final ganha o mundo</span>
           <h2 className="bridge-title font-serif-editorial text-5xl italic lowercase leading-[1.05] text-white md:text-8xl">
             da tela grande<br />ao seu feed
           </h2>

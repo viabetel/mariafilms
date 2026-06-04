@@ -4,6 +4,7 @@ import {
   deleteProposal, duplicateProposal, clientMessage,
   EVENT_LABEL, type ProposalDetail as Detail, type ProposalStatus,
 } from './api';
+import { toWhatsapp } from './validation';
 
 // Drawer lateral do admin: tudo sobre UMA proposta — conteúdo, versão escolhida
 // pelo cliente, dados do signatário, linha do tempo e ações de controle.
@@ -97,6 +98,7 @@ export function ProposalDetailDrawer({
   const btnGhost = `${btnBase} border border-neutral-400 text-neutral-800 hover:border-neutral-900 hover:text-neutral-900`;
   const btnDanger = `${btnBase} border border-red-300 text-red-600 hover:bg-red-50`;
   const btnDangerSolid = `${btnBase} bg-red-600 text-white hover:bg-red-700`;
+  const btnWhats = `${btnBase} inline-flex items-center gap-2 bg-green-600 text-white hover:bg-green-700`;
   const chosen = d?.plans.find((p) => p.id === d?.selectedPlanId);
 
   return (
@@ -168,12 +170,22 @@ export function ProposalDetailDrawer({
             {/* signatário */}
             <Section title="dados do signatário">
               {d.signer ? (
-                <div className="grid grid-cols-1 gap-2 font-display-tech text-sm sm:grid-cols-2">
-                  <div><span className="text-[10px] uppercase tracking-widest text-neutral-500">nome</span><div className="text-neutral-900">{d.signer.nome}</div></div>
-                  <div><span className="text-[10px] uppercase tracking-widest text-neutral-500">cpf / cnpj</span><div className="text-neutral-900">{d.signer.documento}</div></div>
-                  <div><span className="text-[10px] uppercase tracking-widest text-neutral-500">e-mail</span><div className="text-neutral-900">{d.signer.email}</div></div>
-                  <div><span className="text-[10px] uppercase tracking-widest text-neutral-500">consentimento</span><div className="text-neutral-900">{fmtDateTime(d.signer.consentAt)}</div></div>
-                </div>
+                <>
+                  <div className="grid grid-cols-1 gap-2 font-display-tech text-sm sm:grid-cols-2">
+                    <div><span className="text-[10px] uppercase tracking-widest text-neutral-500">nome</span><div className="text-neutral-900">{d.signer.nome}</div></div>
+                    <div><span className="text-[10px] uppercase tracking-widest text-neutral-500">telefone / whatsapp</span><div className="text-neutral-900">{d.signer.telefone || 'não informado'}</div></div>
+                    <div><span className="text-[10px] uppercase tracking-widest text-neutral-500">cpf / cnpj</span><div className="text-neutral-900">{d.signer.documento}</div></div>
+                    <div><span className="text-[10px] uppercase tracking-widest text-neutral-500">e-mail</span><div className="break-all text-neutral-900">{d.signer.email}</div></div>
+                    <div><span className="text-[10px] uppercase tracking-widest text-neutral-500">consentimento</span><div className="text-neutral-900">{fmtDateTime(d.signer.consentAt)}</div></div>
+                  </div>
+                  {/* ponto de decisão: falar com o cliente */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {d.signer.telefone && (
+                      <a href={`https://wa.me/${toWhatsapp(d.signer.telefone)}?text=${encodeURIComponent(`oi ${d.signer.nome.split(' ')[0]}, aqui é a maria films sobre a sua proposta.`)}`} target="_blank" rel="noopener noreferrer" className={btnWhats}>falar no whatsapp</a>
+                    )}
+                    <a href={`mailto:${d.signer.email}?subject=${encodeURIComponent('sua proposta na maria films')}`} className={btnGhost}>enviar e-mail</a>
+                  </div>
+                </>
               ) : (
                 <p className="font-display-tech text-sm text-neutral-500">ninguém aceitou a proposta ainda.</p>
               )}

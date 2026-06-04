@@ -1,7 +1,8 @@
-fastapi
-uvicorn[standard]
-weasyprint
-httpx
-supabase
-pydantic
-jinja2
+# Versões FIXADAS no que está em uso (reprodutível + evita pegar release novo/malicioso).
+fastapi==0.136.3
+uvicorn[standard]==0.48.0
+weasyprint==69.0
+requests==2.34.2
+slowapi==0.1.9
+pydantic[email]==2.13.4
+python-dotenv==1.1.1

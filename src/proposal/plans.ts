@@ -7,6 +7,7 @@ import { Film, Layers, Image, PlayCircle, Camera, Video, Square, type LucideIcon
 // cronograma. É editável no admin; itens antigos sem tipo caem no inferKind.
 export type DeliverableKind = 'reels' | 'carrossel' | 'arte' | 'stories' | 'foto' | 'video' | 'outro';
 export type Weekday = 'seg' | 'ter' | 'qua' | 'qui' | 'sex' | 'sab' | 'dom';
+export type PaymentMode = 'mensal' | 'avista';
 
 export interface DeliverableItem { label: string; n: number; kind?: DeliverableKind }
 // Uma postagem no cronograma daquela versão (semana + dia + tipo).
@@ -28,6 +29,78 @@ export interface Plan {
   badge?: string;
   weeks?: number; // horizonte do cronograma (default 4, ou 12 se "3 meses")
   schedule?: ScheduleEntry[]; // cronograma salvo desta versão (editável no admin)
+  // ── precificação estruturada (cálculo automático) ────────────────────────
+  paymentMode?: PaymentMode; // 'mensal' (valor×meses) | 'avista' (valor único)
+  monthlyValue?: number; // R$/mês quando mensal
+  totalValue?: number; // R$ total quando à vista
+  months?: number; // duração em meses
+  autoPrice?: boolean; // true (default) = preço/total/por-conteúdo derivam sozinhos
+}
+
+/** Soma a quantidade de todos os entregáveis = nº de conteúdos da versão. */
+export function sumItems(items: DeliverableItem[]): number {
+  return (items ?? []).reduce((s, it) => s + Math.max(0, it.n | 0), 0);
+}
+/** Formata em reais, sem centavos quando o valor é redondo (R$ 580 / R$ 72,50). */
+export function brl(n: number): string {
+  const cents = Math.round(n * 100) % 100 !== 0;
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 });
+}
+/** Valor total da versão: mensal×meses, ou o valor único à vista. */
+export function planTotalValue(p: Pick<Plan, 'paymentMode' | 'monthlyValue' | 'totalValue' | 'months'>): number {
+  if (p.paymentMode === 'mensal') return (p.monthlyValue ?? 0) * Math.max(1, p.months ?? 1);
+  return p.totalValue ?? 0;
+}
+
+// ── Plano de cobrança (o que o gateway de pagamento consome) ────────────────
+// Traduz a precificação da versão em PARCELAS concretas com vencimento. É o elo
+// entre o preço exibido e a cobrança real (Pix/cartão). Quem chama isto de
+// verdade é o SERVIDOR, remontando pelo planId: o cliente nunca manda valor.
+//   V1 (avista 580)  -> 1 parcela de 580 hoje
+//   V2 (mensal 560)  -> 3 parcelas de 560 (hoje, +30d, +60d)  [parcelado em 3x]
+//   V3 (avista 1650) -> 1 parcela de 1.650 hoje
+export type ChargeMethod = 'pix' | 'cartao' | 'boleto';
+export interface Installment { n: number; amount: number; dueInDays: number }
+export interface BillingPlan {
+  mode: PaymentMode;          // 'mensal' (assinatura recorrente) | 'avista'
+  recurring: boolean;         // true = ASSINATURA: cartão debitado automático todo mês
+  total: number;              // valor total do compromisso
+  monthly: number;            // valor de cada mensalidade (0 quando à vista)
+  installmentsTotal: number;  // nº de mensalidades/cobranças
+  installments: Installment[]; // cada mensalidade (vencimento relativo à assinatura)
+}
+// Decidido 2026-06-02: receber DENTRO do site. Mensal = ASSINATURA no cartão
+// (débito automático recorrente, ex.: preapproval do Mercado Pago); à vista = Pix
+// ou cartão único. Pix mês a mês fica como alternativa informal (a Maria cobra na
+// mão) se o cliente não quiser pôr cartão.
+export function billingPlan(p: Pick<Plan, 'paymentMode' | 'monthlyValue' | 'totalValue' | 'months'>): BillingPlan {
+  const total = planTotalValue(p);
+  if (p.paymentMode === 'mensal') {
+    const months = Math.max(1, p.months ?? 1);
+    const monthly = p.monthlyValue ?? Math.round(total / months);
+    const installments: Installment[] = Array.from({ length: months }, (_, i) => ({ n: i + 1, amount: monthly, dueInDays: i * 30 }));
+    return { mode: 'mensal', recurring: true, total, monthly, installmentsTotal: months, installments };
+  }
+  return { mode: 'avista', recurring: false, total, monthly: 0, installmentsTotal: 1, installments: [{ n: 1, amount: total, dueInDays: 0 }] };
+}
+/** Deriva os textos exibidos (preço, total, duração, rótulos) a partir da
+ *  precificação estruturada + dos entregáveis. É o "amarrar decisões": muda o
+ *  valor/meses ou os entregáveis e tudo se recalcula sozinho. */
+export function deriveDisplay(p: Plan): Pick<Plan, 'price' | 'priceNote' | 'duration' | 'total' | 'totalLabel' | 'perContent'> {
+  const contents = sumItems(p.items);
+  const totalValue = planTotalValue(p);
+  const months = Math.max(1, p.months ?? 1);
+  const mensal = p.paymentMode === 'mensal';
+  const mesLabel = months === 1 ? 'mês' : 'meses';
+  return {
+    total: contents,
+    totalLabel: months > 1 ? `conteúdos em ${months} ${mesLabel}` : 'conteúdos entregues',
+    price: mensal ? `${brl(p.monthlyValue ?? 0)}/mês` : brl(totalValue),
+    priceNote: mensal ? `total ${brl(totalValue)}` : 'pagamento único',
+    duration: `${months} ${mesLabel} · ${mensal ? 'parcelado' : 'à vista'}`,
+    // por-conteúdo derivado do MESMO total → nunca defasa do preço/entregáveis
+    perContent: contents > 0 ? `cerca de ${brl(totalValue / contents)} por conteúdo` : '',
+  };
 }
 
 // Rótulo + ícone + cor por tipo de entregável. Fonte única (card, cronograma, editor).
@@ -116,6 +189,10 @@ export const PLANS: Plan[] = [
     price: 'R$ 580',
     priceNote: 'pagamento único',
     perContent: 'cerca de R$ 72,50 por conteúdo',
+    paymentMode: 'avista',
+    totalValue: 580,
+    months: 1,
+    autoPrice: true,
   },
   {
     id: 'v2',
@@ -133,6 +210,10 @@ export const PLANS: Plan[] = [
     price: 'R$ 560/mês',
     priceNote: 'total R$ 1.680,00',
     perContent: 'cerca de R$ 70,00 por conteúdo',
+    paymentMode: 'mensal',
+    monthlyValue: 560,
+    months: 3,
+    autoPrice: true,
     featured: true,
     badge: 'melhor custo-benefício',
   },
@@ -152,6 +233,10 @@ export const PLANS: Plan[] = [
     price: 'R$ 1.650',
     priceNote: 'pagamento único',
     perContent: 'cerca de R$ 68,75 por conteúdo',
+    paymentMode: 'avista',
+    totalValue: 1650,
+    months: 3,
+    autoPrice: true,
     badge: 'menor preço por conteúdo',
   },
 ];

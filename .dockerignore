@@ -1,0 +1,16 @@
+# Contexto de build do Docker = raiz do repo. Só backend/ e propostas/ entram na
+# imagem; o resto é ignorado pra subir rápido e NÃO vazar segredo/lixo.
+.git
+node_modules
+dist
+src
+public
+*.md
+.claude
+remotion
+docs-motion
+scripts
+backend/.env
+**/__pycache__
+**/*.pyc
+**/*.pdf

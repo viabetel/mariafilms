@@ -7,10 +7,12 @@ import {
 } from './api';
 import { ProposalEditor } from './ProposalEditor';
 import { ProposalDetailDrawer } from './ProposalDetail';
+import { ChevronRight } from './icons';
 
 // PAINEL ADMIN (mock): a Maria CRIA/EDITA propostas, gera o código único + link,
 // acompanha o ciclo de vida (que o cliente alimenta) e controla cada proposta.
-// ⚠️ No real: exige login (expõe dados de clientes) — entra com o backend.
+// Expõe dados de clientes (CPF/CNPJ) → fica atrás do AdminGate (senha). No real,
+// trocar por login de verdade no backend (Supabase Auth + RLS).
 
 const STATUS_LABEL: Record<ProposalStatus, { txt: string; cls: string }> = {
   pendente: { txt: 'pendente', cls: 'bg-neutral-100 text-neutral-600' },
@@ -56,14 +58,15 @@ export function AdminPanel() {
   }, []);
 
   const novo = () => { setEditingToken(null); setEditing(defaultContent()); };
-  const editar = (token: string) => { const c = getStored(token); if (c) { setEditingToken(token); setEditing(c); setDetailToken(null); } };
+  const editar = async (token: string) => { const c = await getStored(token); if (c) { setEditingToken(token); setEditing(c); setDetailToken(null); } };
 
-  const salvar = (content: ProposalContent) => {
+  const salvar = async (content: ProposalContent) => {
     if (editingToken) {
-      updateProposal(editingToken, content);
+      await updateProposal(editingToken, content);
       setGenerated({ token: editingToken, link: `/proposta?c=${editingToken}`, days: content.days });
     } else {
-      setGenerated({ ...createProposal(content), days: content.days });
+      const created = await createProposal(content);
+      setGenerated({ ...created, days: content.days });
     }
     setCopied(false);
     setCopiedCode(false);
@@ -87,7 +90,7 @@ export function AdminPanel() {
     });
   };
 
-  const act = (fn: () => void) => { fn(); setMenuToken(null); refresh(); };
+  const act = async (fn: () => void | Promise<void>) => { await fn(); setMenuToken(null); refresh(); };
 
   // contagens (ignora arquivadas no resumo)
   const counts = useMemo(() => {
@@ -218,9 +221,9 @@ export function AdminPanel() {
                 const s = STATUS_LABEL[r.status];
                 const dleft = daysLeftOf(r.expiresAt);
                 return (
-                  <tr key={r.token} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/60">
+                  <tr key={r.token} onClick={() => setDetailToken(r.token)} title="abrir o perfil da proposta" className="group cursor-pointer border-b border-neutral-100 transition-colors last:border-0 hover:bg-pink/[0.04]">
                     <td className="px-5 py-4">
-                      <button onClick={() => setDetailToken(r.token)} className="text-left font-semibold text-neutral-900 hover:text-pink">{r.clienteNome}</button>
+                      <span className="font-semibold text-neutral-900 underline-offset-4 group-hover:text-pink group-hover:underline">{r.clienteNome}</span>
                       {!r.editable && <span className="ml-2 rounded bg-neutral-100 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-neutral-500">exemplo</span>}
                       <div className="font-mono text-[11px] text-neutral-500">{r.token}</div>
                     </td>
@@ -232,9 +235,9 @@ export function AdminPanel() {
                         ? <span className="text-red-500">expirada</span>
                         : <span className={dleft <= 2 ? 'text-amber-600' : 'text-neutral-600'}>{dleft} {dleft === 1 ? 'dia' : 'dias'}</span>}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-3">
-                        <button onClick={() => setDetailToken(r.token)} className="font-display-tech text-[11px] uppercase tracking-widest text-neutral-600 hover:text-pink">detalhe</button>
+                        <button onClick={() => setDetailToken(r.token)} className="inline-flex items-center gap-1 rounded-full border border-neutral-200 px-3 py-1.5 font-display-tech text-[11px] uppercase tracking-widest text-neutral-700 transition-colors group-hover:border-pink group-hover:text-pink">ver perfil <ChevronRight className="h-3 w-3" strokeWidth={2.5} /></button>
                         <button onClick={() => copiarRow(r.token)} className="font-display-tech text-[11px] uppercase tracking-widest text-neutral-600 hover:text-pink">{rowCopied === r.token ? 'copiado' : 'link'}</button>
                         {r.editable ? (
                           <div className="relative">
@@ -277,12 +280,12 @@ export function AdminPanel() {
             const s = STATUS_LABEL[r.status];
             const dleft = daysLeftOf(r.expiresAt);
             return (
-              <div key={r.token} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+              <div key={r.token} onClick={() => setDetailToken(r.token)} className="cursor-pointer rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors active:bg-pink/[0.04]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <button onClick={() => setDetailToken(r.token)} className="break-words text-left font-display-tech font-semibold text-neutral-900">
+                    <span className="break-words font-display-tech font-semibold text-neutral-900">
                       {r.clienteNome}
-                    </button>
+                    </span>
                     {!r.editable && <span className="ml-2 rounded bg-neutral-100 px-1.5 py-0.5 font-display-tech text-[9px] uppercase tracking-widest text-neutral-500">exemplo</span>}
                     <div className="mt-0.5 break-all font-mono text-[11px] text-neutral-500">{r.token}</div>
                   </div>
@@ -297,10 +300,10 @@ export function AdminPanel() {
                       : <span className={dleft <= 2 ? 'text-amber-600' : ''}>{dleft} {dleft === 1 ? 'dia' : 'dias'}</span>}
                   </span>
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-neutral-100 pt-3">
-                  <button onClick={() => setDetailToken(r.token)} className="rounded-full bg-neutral-900 px-4 py-1.5 font-display-tech text-[11px] font-semibold uppercase tracking-widest text-white">detalhe</button>
-                  <button onClick={() => copiarRow(r.token)} className="rounded-full border border-neutral-300 px-4 py-1.5 font-display-tech text-[11px] uppercase tracking-widest text-neutral-600">{rowCopied === r.token ? 'copiado' : 'link'}</button>
-                  {r.editable && <button onClick={() => editar(r.token)} className="rounded-full border border-neutral-300 px-4 py-1.5 font-display-tech text-[11px] uppercase tracking-widest text-neutral-600">editar</button>}
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-neutral-100 pt-3" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => setDetailToken(r.token)} className="inline-flex items-center gap-1 rounded-full bg-pink px-4 py-2.5 font-display-tech text-[11px] font-semibold uppercase tracking-widest text-white">ver perfil <ChevronRight className="h-3 w-3" strokeWidth={2.5} /></button>
+                  <button onClick={() => copiarRow(r.token)} className="rounded-full border border-neutral-300 px-4 py-2.5 font-display-tech text-[11px] uppercase tracking-widest text-neutral-600">{rowCopied === r.token ? 'copiado' : 'link'}</button>
+                  {r.editable && <button onClick={() => editar(r.token)} className="rounded-full border border-neutral-300 px-4 py-2.5 font-display-tech text-[11px] uppercase tracking-widest text-neutral-600">editar</button>}
                 </div>
                 {r.editable && <p className="mt-2 font-display-tech text-[10px] text-neutral-500">duplicar, renovar, arquivar e excluir ficam no detalhe.</p>}
               </div>

@@ -17,7 +17,7 @@ interface Format {
 
 const FORMATS: Format[] = [
   { index: '01', title: 'eventos & shows', desc: 'aftermovies e captação multicâmera com energia de cinema.' },
-  { index: '02', title: 'casamentos', desc: 'filme autoral — a sua história, sem clichê de videomaker.' },
+  { index: '02', title: 'casamentos', desc: 'filme autoral da sua história, sem clichê de videomaker.' },
   { index: '03', title: 'branded content', desc: 'campanhas e comerciais que vendem sem parecer anúncio.' },
   { index: '04', title: 'clipes musicais', desc: 'direção e montagem no ritmo exato da sua faixa.' },
   { index: '05', title: 'documentário', desc: 'narrativas reais com olhar afetivo e tempo de escuta.' },
@@ -57,13 +57,13 @@ export function Services() {
     <section id="servicos" ref={sectionRef} className="relative z-10 bg-black px-4 py-28 md:px-10 md:py-40">
       <div className="mb-14 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <span className="font-display-tech text-[10px] uppercase tracking-hud text-pink">// o que dá pra criar juntos</span>
+          <span className="font-display-tech text-[10px] uppercase tracking-hud text-pink">o que dá pra criar juntos</span>
           <h2 className="sv-title mt-3 font-serif-editorial text-6xl italic lowercase leading-none text-white md:text-8xl">
             formatos
           </h2>
         </div>
         <p className="max-w-xs font-display-tech text-xs lowercase leading-relaxed text-neutral-500">
-          do registro de um evento à campanha de uma marca — sempre com direção de verdade.
+          do registro de um evento à campanha de uma marca, sempre com direção de verdade.
         </p>
       </div>
 

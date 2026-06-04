@@ -201,7 +201,7 @@ export function CinematicAct() {
         // atualiza a lente do HUD no início do capítulo
         tl.call(
           () => {
-            if (lensRef.current) lensRef.current.textContent = `lente // ${CHAPTERS[idx].lens}`;
+            if (lensRef.current) lensRef.current.textContent = `lente · ${CHAPTERS[idx].lens}`;
           },
           [],
           start,
@@ -376,10 +376,17 @@ export function CinematicAct() {
           </div>
 
           <div className="cine-hero-fade absolute bottom-10 flex flex-col items-center gap-1.5 opacity-50">
-            <span className="font-display-tech text-[9px] uppercase tracking-hud text-white/60">role para revelar</span>
-            <div className="flex h-7 w-4 justify-center rounded-full border border-white/25 p-1">
+            {/* touch no mobile (sem mouse), cápsula de mouse no desktop */}
+            <span className="font-display-tech text-[9px] uppercase tracking-hud text-white/60">
+              <span className="sm:hidden">deslize para revelar</span>
+              <span className="hidden sm:inline">role para revelar</span>
+            </span>
+            <div className="hidden h-7 w-4 justify-center rounded-full border border-white/25 p-1 sm:flex">
               <div className="h-1.5 w-1 animate-bounce rounded-full bg-white" />
             </div>
+            <svg className="h-4 w-4 animate-bounce text-white/60 sm:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </div>
         </div>
 
@@ -406,7 +413,7 @@ export function CinematicAct() {
               {c.index}
             </span>
             <span className="cine-fade relative z-[1] mb-3 block font-display-tech text-[10px] font-semibold uppercase tracking-hud text-neutral-500">
-              {c.index} // {c.kicker}
+              {c.index} · {c.kicker}
             </span>
             <h2 className="cine-title hero-title relative z-[1] text-[9vw] font-medium lowercase leading-none tracking-tight text-white md:text-[6vw]">
               {c.title}
@@ -420,11 +427,11 @@ export function CinematicAct() {
         {/* HUD de câmera */}
         <div className="absolute bottom-8 left-6 z-20 flex items-center gap-4 font-display-tech text-[10px] uppercase tracking-widest text-neutral-500 md:left-10">
           <div className="hidden items-center gap-2 sm:flex">
-            <span>camera-control // active</span>
+            <span>camera-control · active</span>
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-pink" />
           </div>
           <span className="hidden h-3 w-px bg-white/10 sm:block" />
-          <span ref={lensRef} className="text-white/80">lente // 24mm f/1.4</span>
+          <span ref={lensRef} className="text-white/80">lente · 24mm f/1.4</span>
         </div>
 
         {/* Barra de progresso */}

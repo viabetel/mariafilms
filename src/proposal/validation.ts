@@ -43,3 +43,15 @@ export function isValidDocumento(value: string): boolean {
 export function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
+
+/** Telefone BR: DDD + número (10 ou 11 dígitos). Aceita máscara/espaços. */
+export function isValidPhone(value: string): boolean {
+  const d = value.replace(/\D/g, '');
+  return d.length === 10 || d.length === 11;
+}
+
+/** Só os dígitos, com 55 na frente (pra link wa.me). */
+export function toWhatsapp(value: string): string {
+  const d = value.replace(/\D/g, '');
+  return d.startsWith('55') ? d : `55${d}`;
+}

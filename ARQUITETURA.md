@@ -364,11 +364,33 @@ hoje mock).
 
 **Backend** (esboço em `backend/`, NÃO funcional): **FastAPI** (WeasyPrint molda o
 contrato por `planId` + chama a Autentique) **+ Supabase** (Postgres `proposals`/
-`acceptances` + Storage de PDFs; `schema.sql`). Rotas: `GET /api/proposta/{token}`,
-`POST /api/proposta/contrato`, `POST /api/webhooks/autentique`. Chave da Autentique
-e service key do Supabase ficam SÓ no backend. WeasyPrint precisa Pango/Cairo →
-Render/Railway/Vercel-Python (não Edge Function). Só o mock de `api.ts` muda quando
-o backend existir; o front não muda mais.
+`acceptances`/`payments` + Storage de PDFs; `schema.sql`). Rotas: `GET /api/proposta/{token}`,
+`POST /api/proposta/contrato`, `POST /api/proposta/pagamento`, `POST /api/webhooks/autentique`,
+`POST /api/webhooks/pagamento`. Chave da Autentique, do gateway e service key do
+Supabase ficam SÓ no backend. WeasyPrint precisa Pango/Cairo → Render/Railway/
+Vercel-Python (não Edge Function). Só o mock de `api.ts` muda quando o backend
+existir; o front não muda mais.
+
+**Pagamento = gateway BR, receber DENTRO do site (NÃO Stripe, NÃO Asaas).**
+Stripe saiu (Pix restrito no BR); Asaas saiu (reviews ruins). Critério: gateway
+sem mensalidade, só taxa por transação → **Mercado Pago recomendado** (Pagar.me
+alternativa). Modelo decidido por TIPO de versão: plano **mensal = ASSINATURA
+recorrente no cartão** (débito automático todo mês, preapproval do Mercado Pago);
+plano **à vista = cobrança única** (Pix copia-e-cola/QR ou cartão). **Pix mês a
+mês** fica como alternativa **informal** (a Maria cobra fora do site). Motor =
+`billingPlan()` em `plans.ts` (campo `recurring`, espelhado em `billing_plan()` no
+backend). **O servidor SEMPRE remonta o valor pelo `planId`**, nunca confia no
+cliente. Backend: `create_subscription` (recorrente) + `create_charge` (avulso);
+schema com `subscriptions` + `payments`.
+
+**Regra de ouro do ciclo:** `assinada` e `pago` entram **só por webhook** (ator
+`'sistema'` no `LIFECYCLE`): a Autentique confirma a assinatura, o gateway confirma
+o pagamento. O cliente apenas dispara INTENÇÕES (`requestContract`, `requestPayment`),
+nunca afirma "assinei"/"paguei". No front mock isso é simulado por `markSigned`/
+`markPaid` (botões `[simular]`); no real vira o handler do webhook (com verificação
+de assinatura + idempotência). Fluxo pós-aceite: contrato (WeasyPrint+Autentique) →
+assinatura dos dois (cliente + Maria, webhook) → pagamento (`requestPayment`:
+assinatura no cartão se mensal, Pix se à vista) → confirmação (webhook) → `pago`.
 
 ---
 

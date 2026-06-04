@@ -43,7 +43,7 @@ export function Contact() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`novo projeto — ${form.nome || 'contato pelo site'}`);
+    const subject = encodeURIComponent(`novo projeto: ${form.nome || 'contato pelo site'}`);
     const body = encodeURIComponent(`nome: ${form.nome}\ne-mail: ${form.email}\n\n${form.mensagem}`);
     window.location.href = `mailto:${EMAIL}?subject=${subject}&body=${body}`;
     setSent(true);
@@ -67,12 +67,12 @@ export function Contact() {
       <div className="relative z-10">
         {/* Chamada */}
         <div className="mx-auto max-w-5xl text-center">
-          <span className="ct-fade font-display-tech text-[10px] uppercase tracking-hud text-pink">// último take</span>
+          <span className="ct-fade font-display-tech text-[10px] uppercase tracking-hud text-pink">último take</span>
           <h2 className="ct-title mt-5 font-display-tech text-5xl font-extrabold uppercase leading-[0.88] tracking-tighter text-white md:text-8xl">
             vamos eternizar<br />o seu instante
           </h2>
           <p className="ct-fade mx-auto mt-7 max-w-md font-display-tech text-sm lowercase leading-relaxed text-neutral-400">
-            tem um projeto, evento ou ideia que merece virar filme? conta pra gente — a resposta chega em até 24h.
+            tem um projeto, evento ou ideia que merece virar filme? conta pra gente. a resposta chega em até 24h.
           </p>
         </div>
 
@@ -123,13 +123,13 @@ export function Contact() {
         {/* Footer */}
         <footer className="mt-28 flex flex-col items-center gap-6 border-t border-white/10 py-10 md:flex-row md:justify-between">
           <span className="font-serif-editorial text-2xl italic lowercase text-white">maria films</span>
-          <div className="flex items-center gap-6 font-display-tech text-[10px] uppercase tracking-widest text-neutral-500">
-            <a href="#" className="transition-colors hover:text-pink">instagram</a>
-            <a href="#" className="transition-colors hover:text-pink">vimeo</a>
-            <a href="#" className="transition-colors hover:text-pink">youtube</a>
+          <div className="-my-2 flex items-center gap-5 font-display-tech text-[10px] uppercase tracking-widest text-neutral-500">
+            <a href="#" className="inline-block py-2 transition-colors hover:text-pink">instagram</a>
+            <a href="#" className="inline-block py-2 transition-colors hover:text-pink">vimeo</a>
+            <a href="#" className="inline-block py-2 transition-colors hover:text-pink">youtube</a>
           </div>
           <span className="font-display-tech text-[10px] uppercase tracking-widest text-neutral-600">
-            © {new Date().getFullYear()} — esculpindo o tempo
+            © {new Date().getFullYear()} · esculpindo o tempo
           </span>
         </footer>
       </div>

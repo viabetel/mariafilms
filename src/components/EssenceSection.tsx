@@ -67,7 +67,7 @@ const ESSENCE_FRAGMENT = /* glsl */ `
 const PHRASES = [
   'todo filme começa muito antes da câmera ligar.',
   'começa num olhar que recusa o comum.',
-  'a gente afasta a lente pra enxergar o todo —',
+  'a gente afasta a lente pra enxergar o todo.',
   'e se aproxima de novo pra eternizar o instante.',
 ];
 

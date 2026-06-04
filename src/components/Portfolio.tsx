@@ -159,7 +159,7 @@ export function Portfolio() {
       <div ref={pinRef} className="relative h-screen overflow-hidden">
         {/* Cabeçalho — overlay sobre o travelling */}
         <div className="absolute left-6 top-20 z-20 md:left-16 md:top-24">
-          <span className="font-display-tech text-[10px] uppercase tracking-hud text-pink">// trabalhos selecionados</span>
+          <span className="font-display-tech text-[10px] uppercase tracking-hud text-pink">trabalhos selecionados</span>
           <h2 className="pf-title mt-2 font-serif-editorial text-6xl italic lowercase leading-none text-white md:text-7xl">
             trabalhos
           </h2>

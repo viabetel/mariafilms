@@ -1,0 +1,41 @@
+# Render Blueprint — backend da Proposta Viva (FastAPI + WeasyPrint via Docker).
+# Como usar: Render Dashboard → New → Blueprint → conectar o repo viabetel/mariafilms.
+# Os segredos (sync: false) você preenche no painel do Render — NUNCA ficam no repo.
+services:
+  - type: web
+    name: mariafilms-api
+    runtime: docker
+    repo: https://github.com/viabetel/mariafilms
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free                      # grátis: dorme após ~15min ocioso (1º acesso depois é lento)
+    healthCheckPath: /openapi.json
+    envVars:
+      # ── Autentique ──
+      - key: AUTENTIQUE_TOKEN
+        sync: false                 # token da conta (segredo)
+      - key: AUTENTIQUE_SANDBOX
+        value: "false"              # PRODUÇÃO = false (true = teste, sem validade jurídica)
+      - key: AUTENTIQUE_WEBHOOK_SECRET
+        sync: false                 # MESMO valor cadastrado no painel da Autentique
+      - key: CONTRATADA_EMAIL
+        sync: false
+      - key: CONTRATADA_NOME
+        sync: false
+      # ── Supabase ──
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false                 # service_role (segredo); rotacionar p/ produção
+      # ── Admin ──
+      - key: ADMIN_TOKEN
+        sync: false
+      # ── Pagamento (Fase 2) ──
+      - key: MERCADOPAGO_ACCESS_TOKEN
+        sync: false
+      - key: GATEWAY_WEBHOOK_SECRET
+        sync: false
+      # ── CORS: domínio do site na Vercel (sem barra no fim), separado por vírgula ──
+      - key: CORS_ORIGINS
+        sync: false                 # ex.: https://mariafilms.vercel.app
