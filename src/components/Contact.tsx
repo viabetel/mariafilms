@@ -3,6 +3,8 @@ import { gsap, SplitText, useGSAP } from '../lib/gsap';
 import { EASE } from '../lib/motion';
 
 const EMAIL = 'contato@mariafilms.com.br';
+// Base do backend FastAPI (mesma convenção do src/proposal/api.ts).
+const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000';
 
 /**
  * CONTATO — o último take.
@@ -13,7 +15,8 @@ const EMAIL = 'contato@mariafilms.com.br';
 export function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
   const [form, setForm] = useState({ nome: '', email: '', mensagem: '' });
-  const [sent, setSent] = useState(false);
+  const [hp, setHp] = useState(''); // honeypot anti-spam (campo invisível)
+  const [status, setStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
 
   useGSAP(
     () => {
@@ -41,12 +44,26 @@ export function Contact() {
     { scope: sectionRef },
   );
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`novo projeto: ${form.nome || 'contato pelo site'}`);
-    const body = encodeURIComponent(`nome: ${form.nome}\ne-mail: ${form.email}\n\n${form.mensagem}`);
-    window.location.href = `mailto:${EMAIL}?subject=${subject}&body=${body}`;
-    setSent(true);
+    if (status === 'sending') return;
+    setStatus('sending');
+    try {
+      const resp = await fetch(`${API_BASE}/api/contato`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: form.nome, email: form.email, mensagem: form.mensagem, website: hp }),
+      });
+      if (!resp.ok) throw new Error(String(resp.status));
+      setStatus('ok');
+      setForm({ nome: '', email: '', mensagem: '' });
+    } catch {
+      // backend fora: cai no e-mail do visitante pra a mensagem não se perder
+      const subject = encodeURIComponent(`novo projeto: ${form.nome || 'contato pelo site'}`);
+      const body = encodeURIComponent(`nome: ${form.nome}\ne-mail: ${form.email}\n\n${form.mensagem}`);
+      window.location.href = `mailto:${EMAIL}?subject=${subject}&body=${body}`;
+      setStatus('error');
+    }
   };
 
   const field =
@@ -78,6 +95,17 @@ export function Contact() {
 
         {/* Formulário */}
         <form className="mx-auto mt-16 grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2" onSubmit={submit}>
+          {/* honeypot anti-spam: invisível pra humanos, bots costumam preencher */}
+          <input
+            type="text"
+            name="website"
+            value={hp}
+            onChange={(e) => setHp(e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="pointer-events-none absolute left-[-9999px] h-0 w-0 opacity-0"
+          />
           <input
             className={field}
             placeholder="seu nome"
@@ -102,11 +130,16 @@ export function Contact() {
           />
           <button
             type="submit"
-            className="ct-fade group mt-2 flex items-center justify-center gap-3 rounded-full bg-pink py-5 font-display-tech text-sm font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:shadow-pink-glow md:col-span-2"
+            disabled={status === 'sending' || status === 'ok'}
+            className="ct-fade mt-2 flex items-center justify-center rounded-full bg-pink py-5 font-display-tech text-sm font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:shadow-pink-glow disabled:opacity-70 md:col-span-2"
           >
-            {sent ? 'abrindo seu e-mail…' : 'enviar briefing'}
-            <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+            {status === 'sending' ? 'enviando…' : status === 'ok' ? 'recebido, retornamos em breve' : 'enviar briefing'}
           </button>
+          {status === 'error' && (
+            <p className="-mt-2 text-center font-display-tech text-xs lowercase text-neutral-400 md:col-span-2">
+              tivemos um problema no envio, então abrimos seu e-mail como alternativa.
+            </p>
+          )}
         </form>
 
         {/* E-mail direto */}

@@ -108,6 +108,37 @@ class ContratoOut(BaseModel):
     plan: dict
 
 
+# ── Modelo do formulário de contato do site (seção "eternizar o instante") ──
+class ContatoIn(BaseModel):
+    # Limites = anti-DoS/anti-lixo; a validação não confia no front.
+    nome: str = Field(min_length=1, max_length=120)
+    email: EmailStr
+    mensagem: str = Field(min_length=1, max_length=4000)
+    # honeypot: campo isca invisível no form. Humano deixa vazio; bot preenche.
+    website: str | None = Field(default=None, max_length=200)
+
+
+# ── POST /api/contato → grava a mensagem do site (aparece no /admin) ────────
+@app.post("/api/contato")
+@limiter.limit("5/minute")
+async def criar_contato(body: ContatoIn, request: Request):
+    # honeypot preenchido = bot: finge sucesso e descarta (não polui o painel).
+    if body.website:
+        return {"ok": True}
+    db.insert(
+        "contatos",
+        {
+            "nome": body.nome.strip(),
+            "email": str(body.email),
+            "mensagem": body.mensagem.strip(),
+            "ip": get_remote_address(request),
+            "user_agent": (request.headers.get("user-agent") or "")[:400],
+        },
+    )
+    # TODO Resend: notificar a Maria por e-mail aqui quando o token estiver pronto.
+    return {"ok": True}
+
+
 # ── GET /api/proposta/{token} → resolve cliente + conteúdo + status ────────
 @app.get("/api/proposta/{token}")
 async def get_proposta(token: str):

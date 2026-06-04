@@ -218,6 +218,27 @@ def duplicate_proposal(token: str, x_admin_token: str = Header(None)):
     )
 
 
+# ── ADMIN: mensagens do formulário de contato do site ──────────────────────
+@router.get("/api/admin/contatos")
+def list_contatos(x_admin_token: str = Header(None)):
+    _require_admin(x_admin_token)
+    return db.select("contatos", order="created_at.desc")
+
+
+@router.post("/api/admin/contatos/{cid}/read")
+def mark_contato_read(cid: str, body: dict = Body(...), x_admin_token: str = Header(None)):
+    _require_admin(x_admin_token)
+    db.update("contatos", {"lido": bool(body.get("lido", True))}, id=cid)
+    return {"ok": True}
+
+
+@router.delete("/api/admin/contatos/{cid}")
+def delete_contato(cid: str, x_admin_token: str = Header(None)):
+    _require_admin(x_admin_token)
+    db.delete("contatos", id=cid)
+    return {"ok": True}
+
+
 # ── CLIENTE: ações limitadas (públicas pelo código da proposta) ─────────────
 @router.post("/api/proposta/{token}/viewed")
 def mark_viewed(token: str):

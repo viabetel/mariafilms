@@ -801,3 +801,26 @@ async function listProposalsLocal(): Promise<ProposalSummary[]> {
   return [...geradas, ...exemplos];
   // REAL: GET /api/proposta (protegido por login) → lista do Supabase
 }
+
+// ── Mensagens do formulário de contato do site (aba "mensagens" do admin) ───
+// Backend-only (Supabase): sem fallback localStorage — se o backend estiver fora,
+// o chamador trata o erro e mostra um aviso (a mensagem do visitante não se perde
+// porque o front cai no mailto quando o POST /api/contato falha).
+export interface ContactMessage {
+  id: string;
+  nome: string;
+  email: string;
+  mensagem: string;
+  lido: boolean;
+  created_at: string;
+}
+
+export async function listContacts(): Promise<ContactMessage[]> {
+  return (await adminFetch('/api/admin/contatos')) as ContactMessage[];
+}
+export async function markContactRead(id: string, lido: boolean): Promise<void> {
+  await adminFetch(`/api/admin/contatos/${id}/read`, { method: 'POST', body: JSON.stringify({ lido }) });
+}
+export async function deleteContact(id: string): Promise<void> {
+  await adminFetch(`/api/admin/contatos/${id}`, { method: 'DELETE' });
+}

@@ -86,6 +86,20 @@ create table if not exists payments (
   unique (gateway, gateway_charge_id)
 );
 
+-- Mensagens do formulário de contato do site (seção "eternizar o instante").
+-- Público insere via POST /api/contato; a Maria lê no /admin (aba mensagens).
+create table if not exists contatos (
+  id          uuid primary key default gen_random_uuid(),
+  nome        text not null,
+  email       text not null,
+  mensagem    text not null,
+  lido        boolean not null default false,
+  ip          text,
+  user_agent  text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists idx_contatos_created on contatos(created_at desc);
+
 create index if not exists idx_proposals_token on proposals(token);
 create index if not exists idx_acceptances_proposal on acceptances(proposal_id);
 create index if not exists idx_payments_proposal on payments(proposal_id);

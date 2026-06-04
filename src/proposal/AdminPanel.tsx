@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ContactInbox } from './ContactInbox';
 import {
   listProposals, createProposal, updateProposal, getStored, defaultContent,
   duplicateProposal, archiveProposal, renewProposal, deleteProposal,
@@ -28,6 +29,7 @@ type Sort = 'recentes' | 'expira' | 'status';
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
 
 export function AdminPanel() {
+  const [view, setView] = useState<'propostas' | 'mensagens'>('propostas');
   const [rows, setRows] = useState<ProposalSummary[] | null>(null);
   const [editing, setEditing] = useState<ProposalContent | null>(null);
   const [editingToken, setEditingToken] = useState<string | null>(null);
@@ -122,11 +124,30 @@ export function AdminPanel() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="font-display-tech text-[10px] uppercase tracking-hud text-pink">painel · maria films</span>
-            <h1 className="mt-2 font-serif-editorial text-4xl text-neutral-900 md:text-5xl">propostas</h1>
+            <h1 className="mt-2 font-serif-editorial text-4xl text-neutral-900 md:text-5xl">{view === 'mensagens' ? 'mensagens' : 'propostas'}</h1>
           </div>
-          <button onClick={novo} className="rounded-full bg-pink px-6 py-3 font-display-tech text-xs font-semibold uppercase tracking-widest text-white transition-shadow hover:shadow-lg">+ nova proposta</button>
+          {view === 'propostas' && (
+            <button onClick={novo} className="rounded-full bg-pink px-6 py-3 font-display-tech text-xs font-semibold uppercase tracking-widest text-white transition-shadow hover:shadow-lg">+ nova proposta</button>
+          )}
         </div>
 
+        {/* abas: propostas | mensagens do formulário do site */}
+        <div className="mt-6 flex gap-1 border-b border-neutral-200">
+          {(['propostas', 'mensagens'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`-mb-px border-b-2 px-4 py-2.5 font-display-tech text-[11px] font-semibold uppercase tracking-widest transition-colors ${view === v ? 'border-pink text-pink' : 'border-transparent text-neutral-500 hover:text-neutral-800'}`}
+            >
+              {v === 'propostas' ? 'propostas' : 'mensagens do site'}
+            </button>
+          ))}
+        </div>
+
+        {view === 'mensagens' && <ContactInbox />}
+
+        {view === 'propostas' && (
+          <>
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 font-display-tech text-[11px] text-amber-700">
           protótipo: quando for ao ar, esta página exige login (expõe dados de clientes).
         </div>
@@ -312,6 +333,8 @@ export function AdminPanel() {
         </div>
 
         <p className="mt-6 font-display-tech text-[11px] text-neutral-500">[mock] propostas ficam no navegador (localStorage). com backend, vão pro Supabase; o ciclo de vida avança pelos webhooks (Autentique/Stripe). abra a proposta numa outra aba e aceite pra ver o painel atualizar sozinho.</p>
+          </>
+        )}
       </div>
 
       {/* confirmação de exclusão */}
