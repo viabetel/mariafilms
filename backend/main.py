@@ -118,11 +118,22 @@ async def get_proposta(token: str):
         return {"clienteNome": token.replace("-", " "), "intro": "", "plans": [], "status": "pendente", "expiresAt": None, "blocked": False}
     # View segura pro CLIENTE: sem a nota interna (notes) nem a trilha de eventos.
     content = row.get("content") or {}
+    status = content.get("status", "pendente")
+
+    # FECHAMENTO SEM WEBHOOK: se está aguardando assinatura, pergunta pra Autentique
+    # (com o token do servidor) se os DOIS já assinaram e marca 'assinada' na hora.
+    # O front faz polling deste GET a cada 5s → o status avança sozinho, sem depender
+    # de webhook cadastrado no painel. Read da Autentique não gasta crédito.
+    if status == "aguardando_assinatura":
+        acc = _latest_acceptance(row.get("id"))
+        if acc and _finalize_if_all_signed(acc, row):
+            status = "assinada"
+
     return {
         "clienteNome": content.get("clienteNome") or row.get("client_name"),
         "intro": content.get("intro", ""),
         "plans": content.get("plans", []),
-        "status": content.get("status", "pendente"),
+        "status": status,
         "expiresAt": row.get("expires_at"),
         "blocked": bool(content.get("archived")),
         # link de assinatura (Autentique) p/ RESTAURAR o iframe quando o cliente
@@ -388,13 +399,40 @@ def _archive_signed_pdf(acceptance: dict, signed_url: str | None) -> str | None:
         return None
 
 
+def _finalize_if_all_signed(acceptance: dict, proposal: dict | None) -> bool:
+    """FONTE DA VERDADE: pergunta pra Autentique se TODOS assinaram. Se sim, fecha
+    — arquiva o PDF assinado, grava signed_at e marca a proposta 'assinada'.
+    Idempotente (já 'assinada' → no-op). Devolve True se está/ficou assinada.
+    Usado pelo webhook E pelo polling do front (não depende de webhook cadastrado)."""
+    if proposal and proposal.get("status") == "assinada":
+        return True  # já fechado
+    state = _autentique_document_state(acceptance["autentique_document_id"])
+    if not state or not state["all_signed"]:
+        return False  # ainda falta signatário (ex.: Maria não contrassinou)
+    signed_path = _archive_signed_pdf(acceptance, state["signed_url"])
+    patch = {"signed_at": datetime.now(timezone.utc).isoformat()}
+    if signed_path:
+        patch["signed_pdf_path"] = signed_path
+    db.update("acceptances", patch, id=acceptance["id"])
+    _set_proposal_status(proposal, "assinada")  # coluna + content.status (admin lê este)
+    return True
+
+
+def _latest_acceptance(proposal_id: str) -> dict | None:
+    """Aceite mais recente da proposta que tem documento na Autentique."""
+    if not proposal_id:
+        return None
+    accs = db.select("acceptances", order="created_at.desc", proposal_id=proposal_id)
+    return next((a for a in accs if a.get("autentique_document_id")), None)
+
+
 def _process_autentique_webhook(payload: dict) -> dict:
     """Miolo do webhook, sem HTTP (testável). Recebe o payload JÁ AUTENTICADO."""
     if not db.enabled():
         return {"ok": True}  # sem banco não há o que marcar (modo protótipo)
 
-    # 1) acha a aceitação pelo id do documento que aparece em QUALQUER lugar do
-    #    payload assinado → robusto contra mudanças no formato do webhook.
+    # acha a aceitação pelo id do documento que aparece em QUALQUER lugar do
+    # payload assinado → robusto contra mudanças no formato do webhook.
     acceptance = None
     for candidate in dict.fromkeys(_iter_strings(payload)):  # dedup, preserva ordem
         acceptance = db.select_one("acceptances", autentique_document_id=candidate)
@@ -403,25 +441,9 @@ def _process_autentique_webhook(payload: dict) -> dict:
     if not acceptance:
         return {"ok": True}  # evento de um documento que não é nosso → ignora
 
-    proposal_id = acceptance.get("proposal_id")
-    proposal = db.select_one("proposals", id=proposal_id) if proposal_id else None
-    if proposal and proposal.get("status") == "assinada":
-        return {"ok": True}  # idempotência: já fechado, não reprocessa
-
-    # 2) FONTE DA VERDADE: só fecha quando a Autentique confirma TODOS assinados.
-    state = _autentique_document_state(acceptance["autentique_document_id"])
-    if not state or not state["all_signed"]:
-        return {"ok": True}  # ainda falta signatário (ex.: Maria não contrassinou)
-
-    # 3) documento fechado → arquiva o PDF assinado, grava signed_at e marca a
-    #    proposta 'assinada' (libera a etapa de pagamento).
-    signed_path = _archive_signed_pdf(acceptance, state["signed_url"])
-    patch = {"signed_at": datetime.now(timezone.utc).isoformat()}
-    if signed_path:
-        patch["signed_pdf_path"] = signed_path
-    db.update("acceptances", patch, id=acceptance["id"])
-    _set_proposal_status(proposal, "assinada")  # coluna + content.status (admin lê este)
-    return {"ok": True, "status": "assinada"}
+    proposal = db.select_one("proposals", id=acceptance.get("proposal_id")) if acceptance.get("proposal_id") else None
+    closed = _finalize_if_all_signed(acceptance, proposal)
+    return {"ok": True, "status": "assinada"} if closed else {"ok": True}
 
 
 @app.post("/api/webhooks/autentique")
