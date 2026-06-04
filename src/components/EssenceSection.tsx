@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { gsap, useGSAP } from '../lib/gsap';
 import { EASE, prefersReducedMotion } from '../lib/motion';
-import { createShaderQuad, hasWebGL, type ShaderQuad } from '../lib/glQuad';
+import { hasWebGL } from '../lib/webgl';
+import type { ShaderQuad } from '../lib/glQuad';
 
 // Overlay (mix-blend: screen) que adiciona LUZ ao vídeo: bloom seletivo das
 // altas-luzes, aberração cromática radial e grão. Não re-desenha o vídeo (só o
@@ -102,11 +103,16 @@ export function EssenceSection() {
         },
       });
 
-      // shader de brilho sobre o vídeo (lazy; cai pro glow CSS se faltar WebGL)
+      // shader de brilho sobre o vídeo. A `ogl` é importada SOB DEMANDA (code-
+      // split): só baixa quando esta seção realmente vai montar o efeito, então
+      // não pesa o carregamento inicial. Cai pro glow CSS se faltar WebGL.
+      let disposed = false;
       if (useGL && canvasRef.current && videoRef.current) {
         const video = videoRef.current;
-        const build = () => {
-          quadRef.current = createShaderQuad(canvasRef.current!, {
+        const build = async () => {
+          const { createShaderQuad } = await import('../lib/glQuad');
+          if (disposed || !canvasRef.current) return; // a seção já desmontou
+          quadRef.current = createShaderQuad(canvasRef.current, {
             fragment: ESSENCE_FRAGMENT,
             uniforms: {
               uScale: { value: 1.7 },
@@ -146,6 +152,7 @@ export function EssenceSection() {
       });
 
       return () => {
+        disposed = true;
         quadRef.current?.dispose();
         quadRef.current = null;
       };

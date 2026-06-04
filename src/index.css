@@ -48,6 +48,16 @@
     font-family: 'Sora', sans-serif;
   }
 
+  /* Tipografia premium da faixa de marcas (Fontshare, fora do Google):
+     Boska = serifa de alto contraste (masthead de moda); Switzer = grotesco
+     limpo. Caem nas do site se o Fontshare não responder. */
+  .font-boska {
+    font-family: 'Boska', 'Instrument Serif', Georgia, serif;
+  }
+  .font-switzer {
+    font-family: 'Switzer', 'Sora', sans-serif;
+  }
+
   .hero-title {
     font-family: 'Sora', sans-serif;
     letter-spacing: -0.06em;
@@ -116,6 +126,30 @@
   0% { transform: translate(0, 0); }
   50% { transform: translate(-2%, 1%); }
   100% { transform: translate(1%, -2%); }
+}
+
+/* Faixa de marcas (SocialDepth): rola a lista na horizontal em loop sem fim.
+   A lista é renderizada DUAS vezes lado a lado; mover -50% volta ao começo
+   sem emenda. É só um transform → barato e roda na GPU. */
+@keyframes sd-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes sd-marquee-rev {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+.sd-marquee-track {
+  animation: sd-marquee 36s linear infinite;
+  will-change: transform;
+}
+.sd-marquee-track-rev {
+  animation: sd-marquee-rev 30s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sd-marquee-track,
+  .sd-marquee-track-rev { animation: none; }
 }
 
 @keyframes soundBar {

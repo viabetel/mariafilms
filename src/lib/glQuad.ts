@@ -57,7 +57,9 @@ export function createShaderQuad(
       canvas,
       alpha: true,
       premultipliedAlpha: false,
-      dpr: Math.min(window.devicePixelRatio || 1, 2),
+      // Efeitos de glow/dissolve suaves em mix-blend — dpr 1.5 corta ~45% do
+      // custo de fragment (importa no bloom 3×3 da essência) sem perda visível.
+      dpr: Math.min(window.devicePixelRatio || 1, 1.5),
     });
     if (!renderer.gl) return null;
   } catch {
@@ -152,14 +154,4 @@ export function createShaderQuad(
   };
 
   return { uniforms, resize, dispose };
-}
-
-/** WebGL disponível? Usado por componentes para decidir entre shader e CSS. */
-export function hasWebGL(): boolean {
-  try {
-    const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch {
-    return false;
-  }
 }

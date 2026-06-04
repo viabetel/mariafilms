@@ -95,18 +95,26 @@ export function CinematicAct() {
       const canvas = canvasRef.current!;
       const ctx = canvas.getContext('2d')!;
       const seq = { frame: 0 };
+      // Última imagem efetivamente pintada — evita redesenhar o mesmo frame a
+      // cada onUpdate do scrub (o scroll dispara muito mais que 259 vezes).
+      let lastDrawn = -1;
 
       // --- Renderização "cover" com device pixel ratio + leve respiração ---
       const resize = () => {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        // Os frames-fonte têm 1920px de largura; passar de dpr ~1.5 só faria o
+        // canvas ficar maior que a fonte (upscale borrado e drawImage mais caro)
+        // sem ganho real — os filtros/blur já suavizam. Cap conservador.
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
         canvas.width = window.innerWidth * dpr;
         canvas.height = window.innerHeight * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        lastDrawn = -1; // o canvas foi limpo pelo resize → força repintura
         render();
       };
 
       const render = () => {
         const i = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(seq.frame)));
+        if (i === lastDrawn) return; // nada mudou → não toca no canvas
         const img = frameImages[i];
         const w = window.innerWidth;
         const h = window.innerHeight;
@@ -120,6 +128,7 @@ export function CinematicAct() {
         const dw = iw * scale;
         const dh = ih * scale;
         ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+        lastDrawn = i;
       };
 
       resize();

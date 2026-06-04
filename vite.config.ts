@@ -8,7 +8,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) return 'vendor';
+          if (id.includes('node_modules')) {
+            // `ogl` (WebGL) só é usada pelo brilho da EssenceSection, via import
+            // dinâmico. Deixamos ela FORA do vendor para seguir esse split e cair
+            // num chunk próprio carregado sob demanda (não pesa o load inicial).
+            if (id.includes('ogl')) return;
+            return 'vendor';
+          }
         },
       },
     },
