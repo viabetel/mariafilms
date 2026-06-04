@@ -62,64 +62,113 @@ def _clauses(p, signer, R, C):
            if not R["entrega_raw"] else
            "Os arquivos brutos (RAW) serão entregues ao CONTRATANTE.")
 
+    email_ct = (f", e-mail {signer['email']}" if signer.get("email") else "")
     return [
-        ("1. das partes",
-         f"<strong>CONTRATADA:</strong> {C['nome']}, {C['doc']}, doravante \"{C['marca']}\". "
-         f"<strong>CONTRATANTE:</strong> {signer['nome']}, {signer.get('doc','CPF/CNPJ ____')}. "
-         "As partes ajustam o presente contrato de prestação de serviços de produção de conteúdo digital."),
+        ("1. das partes e qualificação",
+         f"<strong>CONTRATADA:</strong> {C['nome']}, inscrita sob o {C['doc']}, com atuação sob a marca "
+         f"\"{C['marca']}\", sediada em {C['cidade']}. <strong>CONTRATANTE:</strong> {signer['nome']}, "
+         f"inscrito(a) sob o {signer.get('doc','CPF/CNPJ ____')}{email_ct}, qualificação completa conforme dados "
+         "informados no aceite eletrônico e na trilha de auditoria. As partes, por livre manifestação de vontade e "
+         "boa-fé (arts. 421 e 422 do Código Civil), ajustam o presente contrato de prestação de serviços."),
 
         ("2. do objeto",
-         f"Prestação de serviços de produção de conteúdo digital — plano <strong>{p['code']} · {p['name']}</strong>: "
-         f"{p['total']} conteúdos ({itens}),{extras} durante {p['duration']}, conforme escopo, roteiro, captação, "
-         "edição e legenda descritos na proposta que integra este contrato."),
+         f"Constitui objeto a prestação de serviços de produção de conteúdo digital — plano "
+         f"<strong>{p['code']} · {p['name']}</strong>: {p['total']} conteúdos ({itens}),{extras} ao longo de "
+         f"{p['duration']}, compreendendo roteiro, captação, edição e legenda, conforme escopo detalhado na proposta "
+         "comercial que, rubricada eletronicamente, integra este contrato para todos os fins."),
 
-        ("3. dos prazos e aprovação",
-         f"A produção segue cronograma mensal. O CONTRATANTE deverá aprovar cada conteúdo em até "
-         f"{R['aprovacao_dias']} dias úteis; decorrido o prazo sem manifestação, o conteúdo será considerado "
-         "tacitamente aprovado, para não comprometer o cronograma."),
+        ("3. do regime de prestação e da ausência de vínculo",
+         "Os serviços são prestados em regime autônomo (arts. 593 e seguintes do Código Civil), sem subordinação, "
+         "habitualidade ou pessoalidade que caracterizem vínculo empregatício, inexistindo entre as partes relação "
+         "de emprego, societária ou de representação. A CONTRATADA poderá valer-se de auxiliares ou subcontratados "
+         "para a execução, permanecendo integralmente responsável pela entrega e pela qualidade."),
 
-        ("4. das revisões",
-         f"Estão inclusas até {R['revisoes']} revisões por conteúdo. Ajustes adicionais poderão ser cobrados à parte."),
+        ("4. das obrigações da contratada",
+         "Executar os serviços com diligência, técnica e boa-fé; observar o cronograma e o escopo contratados; "
+         "manter o CONTRATANTE informado sobre o andamento; e guardar sigilo das informações a que tiver acesso."),
 
         ("5. das obrigações do contratante",
-         "Fornecer informações, acessos e materiais necessários; disponibilizar locação/produtos quando aplicável; "
-         "e providenciar autorização de uso de imagem de terceiros que venham a aparecer nos conteúdos, "
-         "respondendo por eventuais reclamações a esse título."),
+         "Fornecer tempestivamente informações, acessos, briefing e materiais necessários; disponibilizar "
+         "locação/produtos quando aplicável; efetuar os pagamentos nas datas ajustadas; e, quando terceiros "
+         "aparecerem nos conteúdos, obter e fornecer as respectivas autorizações de uso de imagem, respondendo "
+         "exclusivamente por reclamações a esse título."),
 
-        ("6. do valor e pagamento",
-         f"Pelo plano contratado, o valor é de <strong>{p['price_prefix']} {p['price']}{p['price_suffix']}</strong> "
-         f"({p['price_note']}). O atraso no pagamento implica multa de {R['multa_atraso_pct']}% e juros de "
-         f"{R['juros_mes_pct']}% ao mês, e autoriza a CONTRATADA a suspender as entregas até a regularização."),
+        ("6. dos prazos, cronograma e aprovação",
+         f"A produção segue cronograma mensal alinhado na proposta. O CONTRATANTE deverá analisar e aprovar cada "
+         f"conteúdo em até {R['aprovacao_dias']} dias úteis; decorrido o prazo sem manifestação, o conteúdo será "
+         "considerado tacitamente aprovado, a fim de preservar o cronograma e as entregas subsequentes."),
 
-        ("7. dos direitos e entrega",
-         f"{raw} {portfolio} A propriedade dos conteúdos finais transfere-se ao CONTRATANTE após a quitação integral."),
+        ("7. das revisões",
+         f"Estão inclusas até {R['revisoes']} revisões por conteúdo, limitadas ao escopo originalmente aprovado. "
+         "Alterações que extrapolem o escopo ou revisões adicionais poderão ser orçadas e cobradas à parte, "
+         "mediante prévia concordância."),
 
-        ("8. da vigência e rescisão",
-         f"A vigência acompanha a duração do plano ({p['duration']}), iniciando na assinatura. "
-         f"<strong>Em caso de rescisão por iniciativa do CONTRATANTE, ainda que com aviso prévio:</strong> "
-         f"(i) não haverá reembolso de valores já pagos; "
-         f"(ii) incidirá multa rescisória de {R['multa_pct']}% sobre o saldo do contrato; e "
-         f"(iii) tornar-se-á imediatamente exigível o valor integral das mensalidades/parcelas remanescentes "
-         "até o término da vigência. Conteúdos já produzidos e não pagos permanecem de propriedade da CONTRATADA."),
+        ("8. do valor, do pagamento e da mora",
+         f"Pelos serviços, o CONTRATANTE pagará <strong>{p['price_prefix']} {p['price']}{p['price_suffix']}</strong> "
+         f"({p['price_note']}). O atraso de pagamento sujeita o CONTRATANTE a multa de {R['multa_atraso_pct']}% e "
+         f"juros de mora de {R['juros_mes_pct']}% ao mês (observado, em relação de consumo, o art. 52, §1º, do CDC), "
+         "facultando à CONTRATADA suspender as entregas até a regularização, na forma do art. 476 do Código Civil "
+         "(exceção do contrato não cumprido)."),
 
-        ("9. de força maior",
-         "Eventos de caso fortuito ou força maior (doença, impossibilidade técnica, restrições legais) suspendem "
-         "os prazos pelo período necessário, com remarcação das entregas, sem caracterizar inadimplemento."),
+        ("9. da propriedade intelectual e cessão de direitos autorais",
+         f"{raw} Os conteúdos finalizados são obra autoral da CONTRATADA. Mediante a quitação integral dos valores "
+         "devidos, a CONTRATADA cede ao CONTRATANTE, em caráter definitivo e oneroso, os direitos patrimoniais de "
+         "uso, reprodução, distribuição e comunicação ao público dos conteúdos finais, para fins de divulgação e "
+         "marketing do CONTRATANTE, em território nacional e nas modalidades de uso existentes nesta data (arts. 49 "
+         "e 50 da Lei 9.610/98). Até a quitação, os direitos permanecem com a CONTRATADA. Os direitos morais de "
+         "autor são inalienáveis e permanecem com a CONTRATADA (art. 27 da Lei 9.610/98), facultado o crédito de "
+         "autoria; usos não previstos interpretam-se restritivamente."),
 
-        ("10. da confidencialidade",
-         "As partes manterão sigilo sobre informações estratégicas e comerciais a que tiverem acesso em razão deste contrato."),
+        ("10. do uso em portfólio e do direito de imagem",
+         f"{portfolio} Para tanto, o CONTRATANTE autoriza, a título gratuito e revogável mediante aviso por escrito, "
+         "a utilização dos conteúdos finais e da menção à sua marca nos canais e materiais de divulgação da "
+         "CONTRATADA (art. 20 do Código Civil), preservados os direitos de imagem de terceiros."),
 
-        ("11. da proteção de dados (lgpd)",
-         "Os dados pessoais tratados servem exclusivamente à execução deste contrato (Lei 13.709/2018), "
-         "com segurança e pelo prazo legal de guarda, podendo ser eliminados a pedido após esse período."),
+        ("11. da vigência e da rescisão",
+         f"A vigência acompanha a duração do plano ({p['duration']}), iniciando na assinatura. Qualquer das partes "
+         f"poderá resilir o contrato mediante aviso prévio de {R['aviso_previo_dias']} dias (art. 473 do Código "
+         "Civil). Na resilição por iniciativa do CONTRATANTE, serão devidos: (i) o pagamento integral dos conteúdos "
+         f"já produzidos ou em produção; e (ii) multa rescisória de {R['multa_pct']}% sobre o saldo vincendo, a "
+         "título de pré-fixação de perdas e danos (cláusula penal — arts. 408 a 416 do Código Civil), redutível "
+         "equitativamente em caso de cumprimento parcial ou excesso manifesto (art. 413). Resilição imotivada pela "
+         "CONTRATADA enseja a devolução de valores pagos por entregas não realizadas, sem multa ao CONTRATANTE."),
 
-        ("12. da assinatura eletrônica",
-         "As partes concordam, expressamente, em celebrar e assinar este contrato por meio eletrônico, por plataforma "
-         "de assinatura (ex.: Autentique), reconhecendo sua validade e autenticidade nos termos do art. 10, §2º da "
-         "MP 2.200-2/2001 e da Lei 14.063/2020, mediante trilha de auditoria, registro de data/hora e verificação de integridade."),
+        ("12. do direito de arrependimento",
+         "Sendo o CONTRATANTE pessoa física e consumidora, e tendo a contratação ocorrido fora de estabelecimento "
+         "comercial (meio eletrônico/à distância), fica-lhe assegurado o direito de arrependimento no prazo de 7 "
+         "dias a contar da assinatura (art. 49 do CDC), restituindo-se os valores pagos, descontados os serviços "
+         "comprovadamente já executados a seu pedido nesse período."),
 
-        ("13. do foro",
-         f"Fica eleito o foro da comarca de {C['cidade']} para dirimir questões oriundas deste contrato."),
+        ("13. do caso fortuito e força maior",
+         "Caso fortuito ou força maior (art. 393 do Código Civil — doença, impossibilidade técnica, restrições "
+         "legais, entre outros) suspendem os prazos pelo período necessário, com remarcação das entregas, sem "
+         "caracterizar inadimplemento de qualquer das partes."),
+
+        ("14. da confidencialidade",
+         "As partes manterão sigilo sobre informações estratégicas, comerciais e pessoais a que tiverem acesso em "
+         "razão deste contrato, obrigação que subsiste após o seu término."),
+
+        ("15. da proteção de dados (lgpd)",
+         "O tratamento de dados pessoais limita-se às finalidades de execução deste contrato e cumprimento de "
+         "obrigações legais, tendo por base o art. 7º, V e II, da Lei 13.709/2018 (LGPD). Os dados são mantidos com "
+         "segurança técnica adequada e pelo prazo legal de guarda, assegurados ao titular os direitos do art. 18 da "
+         "LGPD, podendo ser eliminados, mediante solicitação, após cessada a finalidade e os prazos legais."),
+
+        ("16. da assinatura eletrônica",
+         "As partes celebram e assinam este instrumento por meio eletrônico, em plataforma de assinatura (Autentique), "
+         "reconhecendo expressamente sua validade, autenticidade e integridade entre os signatários, nos termos do "
+         "art. 10, §2º, da MP 2.200-2/2001, do art. 107 do Código Civil (liberdade das formas) e do art. 411, III, do "
+         "CPC, comprovadas por trilha de auditoria, registro de data/hora, IP e código de verificação da plataforma."),
+
+        ("17. das disposições gerais",
+         "A tolerância quanto ao descumprimento de qualquer cláusula não implica novação ou renúncia. A eventual "
+         "nulidade de uma cláusula não prejudica as demais. Este contrato e a proposta que o integra constituem o "
+         "acordo integral entre as partes, só podendo ser alterado por aditivo escrito (inclusive eletrônico)."),
+
+        ("18. do foro",
+         f"Fica eleito o foro da comarca de {C['cidade']} para dirimir controvérsias, ressalvado, em relação de "
+         "consumo, o direito do CONTRATANTE consumidor de ajuizar a demanda no foro de seu domicílio (art. 101, I, "
+         "do CDC)."),
     ]
 
 

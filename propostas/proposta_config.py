@@ -80,7 +80,8 @@ NOT_INCLUDED = [
 CONTRACT_RULES = {
     "aprovacao_dias": 3,            # dias úteis p/ aprovação tácita
     "revisoes": 2,                  # ajustes por conteúdo
-    "multa_pct": 30,               # multa rescisória sobre saldo (%)
+    "multa_pct": 30,               # multa rescisória sobre saldo (%) — cláusula penal, redutível (CC art. 413)
+    "aviso_previo_dias": 15,        # aviso prévio p/ resilição (CC art. 473)
     "juros_mes_pct": 1,             # juros de mora a.m.
     "multa_atraso_pct": 2,          # multa por atraso de pagamento
     "portfolio": True,              # Maria pode usar no portfólio/redes
