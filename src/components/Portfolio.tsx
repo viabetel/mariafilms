@@ -14,18 +14,19 @@ interface Film {
   index: string;
   title: string;
   category: string;
-  year: string;
+  year?: string;
   role: string;
   desc: string;
   media: string;
   video?: boolean;
 }
 
+// PLACEHOLDER de mídia: reusa fotos existentes até a Maria enviar as reais de
+// cada trabalho. Trocar `media` (e ligar `video`) quando os arquivos chegarem.
 const FILMS: Film[] = [
-  { index: '01', title: 'se veste', category: 'moda · editorial', year: '2024', role: 'direção + dop', desc: 'tecido e movimento viram coreografia de luz.', media: '/maria/work-veste.jpg' },
-  { index: '02', title: 'o raso não me satisfaz', category: 'clipe musical', year: '2024', role: 'direção + montagem', desc: 'narrativa densa, cortada no ritmo exato da batida.', media: '/maria/work-raso.jpg' },
-  { index: '03', title: 'brasil', category: 'documentário', year: '2023', role: 'direção', desc: 'um olhar afetivo sobre território, gente e pertencimento.', media: '/maria/work-brasil.jpg' },
-  { index: '04', title: 'efeito festa', category: 'evento · aftermovie', year: '2023', role: 'direção + edição', desc: 'a energia de uma noite condensada em movimento e cor.', media: '/frames/frame_180.webp', video: true },
+  { index: '01', title: 'aniversário de 15 anos', category: 'evento · 15 anos', role: 'videomaker + storymaker', desc: 'o grande dia em filme, do primeiro retoque ao último brinde.', media: '/maria/work-veste.jpg' },
+  { index: '02', title: 'loja cristã', category: 'marca · ensaio', role: 'direção de cena + edição', desc: 'vídeos profissionais e direção de cena para a loja.', media: '/maria/work-raso.jpg' },
+  { index: '03', title: 'aniversário infantil', category: 'evento · infantil', role: 'vídeo + foto', desc: 'a festa registrada em vídeo e foto, do jeito que a memória pede.', media: '/maria/work-brasil.jpg' },
 ];
 
 function Panel({ film }: { film: Film }) {
@@ -76,8 +77,12 @@ function Panel({ film }: { film: Film }) {
           </h3>
           <p className="mt-5 max-w-sm font-display-tech text-sm lowercase leading-relaxed text-neutral-300">{film.desc}</p>
           <div className="mt-6 flex items-center gap-6 font-display-tech text-[10px] uppercase tracking-widest text-neutral-400">
-            <span>{film.year}</span>
-            <span className="h-3 w-px bg-white/15" />
+            {film.year && (
+              <>
+                <span>{film.year}</span>
+                <span className="h-3 w-px bg-white/15" />
+              </>
+            )}
             <span>{film.role}</span>
           </div>
         </div>

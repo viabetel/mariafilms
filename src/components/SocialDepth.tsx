@@ -17,16 +17,16 @@ import { EASE, prefersReducedMotion } from '../lib/motion';
  */
 
 const REELS = [
-  { img: '/maria/work-veste.jpg', views: '2.4M', tag: 'se veste' },
-  { img: '/maria/work-raso.jpg', views: '1.1M', tag: 'o raso' },
-  { img: '/maria/work-brasil.jpg', views: '860K', tag: 'brasil' },
+  { img: '/maria/work-veste.jpg', views: '4 mil', tag: 'se veste' },
+  { img: '/maria/work-raso.jpg', views: '5 mil', tag: 'o raso' },
+  { img: '/maria/work-brasil.jpg', views: '500 mil', tag: 'brasil' },
 ];
 
 const STATS = [
-  { n: '5 mil', l: 'views' },
-  { n: '+1800', l: 'seguidores' },
+  { n: '8 mil', l: 'views no último reel' },
+  { n: '2 mil', l: 'seguidores' },
   { n: '100', l: 'filmes entregues' },
-  { n: '100', l: 'marcas atendidas' },
+  { n: '100', l: 'clientes atendidos' },
 ];
 
 // Placeholder — trocar pelos nomes/logos reais das marcas (ver formulário).
@@ -231,16 +231,12 @@ export function SocialDepth() {
         <div className="depth-layer pointer-events-none absolute inset-0" data-speed="2.4">
           <Chip className="absolute left-[5%] top-[3%] md:left-[40%] md:top-[12%]">
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-pink"><path d="M12 21s-7-4.35-9.5-8.5C.5 9 2 5.5 5.5 5.5c2 0 3.5 1.5 6.5 4.5 3-3 4.5-4.5 6.5-4.5 3.5 0 5 3.5 3 7C19 16.65 12 21 12 21z" /></svg>
-            24.8k
+            5 mil
           </Chip>
           <Chip className="absolute hidden md:flex md:right-[22%] md:top-[58%]">@mariaubaldino.films</Chip>
-          <Chip className="absolute hidden md:flex md:left-[20%] md:top-[70%]">
+          <Chip className="absolute right-[4%] bottom-[6%] md:left-[20%] md:top-[70%] md:bottom-auto md:right-auto">
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-white"><path d="M21 6h-18v12h4v3l4-3h6z" /></svg>
-            1.2k comentários
-          </Chip>
-          <Chip className="absolute right-[4%] bottom-[6%] md:right-[14%] md:top-[10%] md:bottom-auto">
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-pink"><path d="M12 1l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z" /></svg>
-            verificada
+            1 mil comentários
           </Chip>
         </div>
 

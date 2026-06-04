@@ -377,11 +377,9 @@ export function CinematicAct() {
           </p>
 
           <div className="cine-hero-fade mt-8 flex items-center gap-8 font-display-tech text-[10px] uppercase tracking-widest text-neutral-400">
-            <span><strong className="text-white">+85</strong> filmes</span>
+            <span><strong className="text-white">100</strong> filmes</span>
             <span className="h-3 w-px bg-white/15" />
-            <span><strong className="text-white">+45m</strong> views</span>
-            <span className="h-3 w-px bg-white/15" />
-            <span><strong className="text-pink">+12</strong> prêmios</span>
+            <span><strong className="text-white">100 mil</strong> views</span>
           </div>
 
           <div className="cine-hero-fade absolute bottom-10 flex flex-col items-center gap-1.5 opacity-50">

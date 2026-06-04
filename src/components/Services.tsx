@@ -16,12 +16,12 @@ interface Format {
 }
 
 const FORMATS: Format[] = [
-  { index: '01', title: 'eventos & shows', desc: 'aftermovies e captação multicâmera com energia de cinema.' },
-  { index: '02', title: 'casamentos', desc: 'filme autoral da sua história, sem clichê de videomaker.' },
-  { index: '03', title: 'branded content', desc: 'campanhas e comerciais que vendem sem parecer anúncio.' },
-  { index: '04', title: 'clipes musicais', desc: 'direção e montagem no ritmo exato da sua faixa.' },
-  { index: '05', title: 'documentário', desc: 'narrativas reais com olhar afetivo e tempo de escuta.' },
-  { index: '06', title: 'social & reels', desc: 'cortes verticais pensados pro feed e pro algoritmo.' },
+  { index: '01', title: 'aniversários & 15 anos', desc: 'o grande dia em filme, da preparação ao último brinde.' },
+  { index: '02', title: 'casamentos', desc: 'a história de vocês contada com cuidado e verdade.' },
+  { index: '03', title: 'festas & reuniões', desc: 'a energia do encontro registrada pra não se perder.' },
+  { index: '04', title: 'profissionais da beleza', desc: 'vídeos e fotos pra o seu trabalho aparecer como merece.' },
+  { index: '05', title: 'empresas', desc: 'conteúdo de marca pra sua empresa vender com imagem forte.' },
+  { index: '06', title: 'social & reels', desc: 'cortes verticais pensados pro feed e pro alcance.' },
 ];
 
 export function Services() {

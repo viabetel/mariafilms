@@ -73,7 +73,7 @@ export function Editorial() {
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950/70 to-transparent" />
             <span className="absolute bottom-6 left-6 font-display-tech text-[10px] uppercase tracking-hud text-white/70">
-              maria eduarda · diretora
+              maria eduarda · diretora & fotógrafa
             </span>
           </div>
         </div>
@@ -86,8 +86,8 @@ export function Editorial() {
           </h2>
 
           <p className="ab-fade mt-8 max-w-lg font-display-tech text-base leading-relaxed text-neutral-300 md:text-lg">
-            diretora e fotógrafa. há mais de oito anos transformo encontros, marcas e
-            histórias em filme, sempre atrás do instante que ninguém mais viu.
+            diretora, videomaker, storymaker e fotógrafa. transformo encontros, marcas
+            e histórias em filme, sempre atrás do instante que ninguém mais viu.
           </p>
           <p className="ab-fade mt-5 max-w-lg font-display-tech text-sm leading-relaxed text-neutral-500">
             não acredito em fórmula. cada projeto começa de uma escuta: o que essa
@@ -95,11 +95,9 @@ export function Editorial() {
           </p>
 
           <div className="ab-fade mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/10 pt-8 font-display-tech text-[11px] uppercase tracking-widest text-neutral-400">
-            <span>baseada no brasil</span>
+            <span>juiz de fora · mg</span>
             <span className="h-3 w-px bg-white/15" />
-            <span>atende brasil + exterior</span>
-            <span className="h-3 w-px bg-white/15" />
-            <span className="text-pink">disponível 2026</span>
+            <span className="text-pink">agenda 2026 / 2027</span>
           </div>
 
           <p className="ab-fade mt-10 font-serif-editorial text-3xl italic lowercase text-white/90">

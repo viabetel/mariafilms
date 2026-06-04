@@ -2,7 +2,9 @@ import { useRef, useState } from 'react';
 import { gsap, SplitText, useGSAP } from '../lib/gsap';
 import { EASE } from '../lib/motion';
 
-const EMAIL = 'contato@mariafilms.com.br';
+const EMAIL = 'mariaeduarda681@icloud.com';
+const INSTAGRAM = 'https://www.instagram.com/mariaubaldino.films';
+const WHATSAPP = 'https://wa.link/2islph';
 // Base do backend FastAPI (mesma convenção do src/proposal/api.ts).
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000';
 
@@ -142,14 +144,22 @@ export function Contact() {
           )}
         </form>
 
-        {/* E-mail direto */}
+        {/* E-mail direto + whatsapp */}
         <div className="ct-fade mt-16 text-center">
-          <span className="font-display-tech text-[10px] uppercase tracking-hud text-neutral-600">ou direto no e-mail</span>
+          <span className="font-display-tech text-[10px] uppercase tracking-hud text-neutral-600">ou chama direto</span>
           <a
             href={`mailto:${EMAIL}`}
             className="mt-2 block font-serif-editorial text-2xl italic text-bone underline decoration-pink decoration-2 underline-offset-8 transition-colors hover:text-white md:text-4xl"
           >
             {EMAIL}
+          </a>
+          <a
+            href={WHATSAPP}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block rounded-full border border-white/20 px-6 py-3 font-display-tech text-xs font-semibold uppercase tracking-widest text-white transition-colors hover:border-pink hover:text-pink"
+          >
+            chamar no whatsapp
           </a>
         </div>
 
@@ -157,9 +167,8 @@ export function Contact() {
         <footer className="mt-28 flex flex-col items-center gap-6 border-t border-white/10 py-10 md:flex-row md:justify-between">
           <span className="font-serif-editorial text-2xl italic lowercase text-white">maria films</span>
           <div className="-my-2 flex items-center gap-5 font-display-tech text-[10px] uppercase tracking-widest text-neutral-500">
-            <a href="#" className="inline-block py-2 transition-colors hover:text-pink">instagram</a>
-            <a href="#" className="inline-block py-2 transition-colors hover:text-pink">vimeo</a>
-            <a href="#" className="inline-block py-2 transition-colors hover:text-pink">youtube</a>
+            <a href={INSTAGRAM} target="_blank" rel="noopener noreferrer" className="inline-block py-2 transition-colors hover:text-pink">instagram</a>
+            <a href={WHATSAPP} target="_blank" rel="noopener noreferrer" className="inline-block py-2 transition-colors hover:text-pink">whatsapp</a>
           </div>
           <span className="font-display-tech text-[10px] uppercase tracking-widest text-neutral-600">
             © {new Date().getFullYear()} · esculpindo o tempo
