@@ -10,6 +10,16 @@ const path = window.location.pathname.replace(/\/+$/, '');
 const isProposal = path.endsWith('/proposta');
 const isAdmin = path.endsWith('/admin');
 
+// Fraunces só é usada nas telas de proposta/admin (.proposal-doc). Carregamos
+// a fonte apenas nessas rotas — o site principal não baixa essa família à toa.
+if (isProposal || isAdmin) {
+  const l = document.createElement('link');
+  l.rel = 'stylesheet';
+  l.href =
+    'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap';
+  document.head.appendChild(l);
+}
+
 const ProposalDossier = lazy(() =>
   import('./proposal/ProposalDossier.tsx').then((m) => ({ default: m.ProposalDossier })),
 );

@@ -209,7 +209,7 @@ export function SocialDepth() {
         <div className="sd-bg absolute inset-0 z-0" style={{ willChange: 'transform' }}>
           <div
             className="absolute inset-[-6%] bg-center bg-cover bg-no-repeat md:bg-[length:auto_140%]"
-            style={{ backgroundImage: "url('/maria/work-veste.jpg')", filter: 'grayscale(0.6) contrast(1.1) brightness(0.4) blur(14px)', transform: 'translateZ(0)' }}
+            style={{ backgroundImage: "url('/maria/work-veste-blur.webp')", filter: 'grayscale(0.6) contrast(1.1) brightness(0.4) blur(14px)', transform: 'translateZ(0)' }}
           />
         </div>
         <div className="absolute inset-0 z-0 bg-black/45" />

@@ -171,7 +171,7 @@ export function EssenceSection() {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           style={{ filter: 'blur(26px) brightness(1.5) saturate(1.35)' }}
         >
           <source src="/reel.webm" type="video/webm" />

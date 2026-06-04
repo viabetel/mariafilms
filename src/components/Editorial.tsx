@@ -66,6 +66,8 @@ export function Editorial() {
             <img
               src="/maria/maria-2.jpg"
               alt="Maria Eduarda"
+              loading="lazy"
+              decoding="async"
               className="ab-portrait absolute inset-0 h-[124%] w-full object-cover"
               style={{ filter: 'grayscale(0.25) contrast(1.05)' }}
             />

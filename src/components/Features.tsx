@@ -60,6 +60,8 @@ function FeatureCard({
           ref={imgRef}
           src={feature.img}
           alt={feature.title}
+          loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover"
           style={{ filter: 'grayscale(0.45) contrast(1.05) brightness(0.8)' }}
         />

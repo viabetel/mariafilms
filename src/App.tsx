@@ -37,7 +37,7 @@ function App() {
         {/* Essência: câmera afastando + Efeit Festa brilhando, frases renovando */}
         <EssenceSection />
 
-        {/* Portfólio de filmes com transição Flip */}
+        {/* Portfólio de filmes (travelling horizontal pinado) */}
         <Portfolio />
 
         {/* Sobre Maria Eduarda */}

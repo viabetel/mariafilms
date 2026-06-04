@@ -3,10 +3,9 @@
 // que os plugins já estejam registrados antes do primeiro uso.
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Flip } from 'gsap/Flip';
 import { SplitText } from 'gsap/SplitText';
 import { useGSAP } from '@gsap/react';
 
-gsap.registerPlugin(ScrollTrigger, Flip, SplitText);
+gsap.registerPlugin(ScrollTrigger, SplitText);
 
-export { gsap, ScrollTrigger, Flip, SplitText, useGSAP };
+export { gsap, ScrollTrigger, SplitText, useGSAP };

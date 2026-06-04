@@ -86,24 +86,32 @@ export function TransitionBridge() {
           <img
             src="/maria/work-raso.jpg"
             alt=""
+            loading="lazy"
+            decoding="async"
             className="bridge-aside absolute left-[3%] top-[9%] w-[15vw] rounded-xl object-cover shadow-2xl ring-1 ring-white/10"
             style={{ aspectRatio: '3 / 4', filter: 'grayscale(0.6) contrast(1.05) brightness(0.42)' }}
           />
           <img
             src="/maria/maria-3.jpg"
             alt=""
+            loading="lazy"
+            decoding="async"
             className="bridge-aside absolute left-[7%] top-[53%] w-[12vw] rounded-xl object-cover shadow-2xl ring-1 ring-white/10"
             style={{ aspectRatio: '3 / 4', filter: 'grayscale(0.6) contrast(1.05) brightness(0.42)' }}
           />
           <img
             src="/maria/maria-1.jpg"
             alt=""
+            loading="lazy"
+            decoding="async"
             className="bridge-aside absolute right-[6%] top-[13%] w-[12vw] rounded-xl object-cover shadow-2xl ring-1 ring-white/10"
             style={{ aspectRatio: '3 / 4', filter: 'grayscale(0.6) contrast(1.05) brightness(0.42)' }}
           />
           <img
             src="/maria/work-brasil.jpg"
             alt=""
+            loading="lazy"
+            decoding="async"
             className="bridge-aside absolute right-[3%] top-[50%] w-[15vw] rounded-xl object-cover shadow-2xl ring-1 ring-white/10"
             style={{ aspectRatio: '3 / 4', filter: 'grayscale(0.6) contrast(1.05) brightness(0.42)' }}
           />
