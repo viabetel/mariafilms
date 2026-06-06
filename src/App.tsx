@@ -28,13 +28,13 @@ function App() {
         {/* Ponte: o corte final se fragmenta em reels */}
         <TransitionBridge />
 
-        {/* TESTE: prova social em camadas de profundidade */}
+        {/* Prova social em camadas de profundidade */}
         <SocialDepth />
 
         {/* Diferenciais: features com hover-expand + reflexo no fundo */}
         <Features />
 
-        {/* Essência: câmera afastando + Efeit Festa brilhando, frases renovando */}
+        {/* Essência: câmera afastando + vídeo de fundo brilhando, frases renovando */}
         <EssenceSection />
 
         {/* Portfólio de filmes (travelling horizontal pinado) */}

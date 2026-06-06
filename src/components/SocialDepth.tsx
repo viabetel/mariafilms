@@ -29,18 +29,6 @@ const STATS = [
   { n: '100', l: 'clientes atendidos' },
 ];
 
-// Placeholder — trocar pelos nomes/logos reais das marcas (ver formulário).
-const BRANDS = [
-  'estúdio norte',
-  'casa videira',
-  'label prisma',
-  'coletivo aurora',
-  'optikal',
-  'rosa records',
-  'fábrica 9',
-  'marca viva',
-];
-
 function PlayBadge({ size = 'md' }: { size?: 'sm' | 'md' }) {
   const box = size === 'sm' ? 'h-9 w-9' : 'h-11 w-11';
   const icon = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
@@ -273,64 +261,6 @@ export function SocialDepth() {
         />
       </div>
 
-      {/* =================== FITAS DE MARCAS CRUZADAS ====================== */}
-      {/* Duas FITAS pretas se atravessam em X: ângulos e sentidos opostos. Cada
-          fita é uma barra preta sólida com borda fina e sombra; a de cima cobre
-          a de baixo no cruzamento, então o texto nunca colide (fica "feito").
-          Bloco PRÓPRIO no fim da seção (sem sobrepor o conteúdo), com folga em
-          cima e embaixo. Fontes premium do Fontshare (Boska + Switzer). */}
-      <div className="sd-marquee relative z-10 bg-black pb-20 pt-16 md:pb-28 md:pt-24">
-        <p className="mb-8 text-center font-display-tech text-[10px] uppercase tracking-hud text-neutral-500 md:mb-12">
-          marcas & artistas que já confiaram
-        </p>
-
-        <div className="relative flex h-[220px] items-center justify-center overflow-hidden md:h-[300px]">
-          {/* brilho rosa no ponto de cruzamento (peeks nos cantos) */}
-          <div
-            className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-[55vw] -translate-x-1/2 -translate-y-1/2 mix-blend-screen"
-            style={{ background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,0,127,0.18), transparent 70%)' }}
-          />
-
-          {/* FITA A (embaixo) — Boska (serifa de alto contraste), gira -7°,
-              rola pra esquerda. Hairline e peso normal = bem fina e elegante. */}
-          <div className="absolute left-1/2 top-1/2 z-[1] w-[200vw] -translate-x-1/2 -translate-y-1/2 -rotate-[7deg]">
-            <div className="border-y border-white/10 bg-black py-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.8)] md:py-2">
-              <div className="flex w-max sd-marquee-track">
-                {[0, 1].map((dup) => (
-                  <ul key={dup} className="flex shrink-0 items-center" aria-hidden={dup === 1}>
-                    {BRANDS.map((b) => (
-                      <li key={b} className="whitespace-nowrap px-8 font-boska text-xl font-normal lowercase text-white md:px-12 md:text-3xl">
-                        {b}
-                      </li>
-                    ))}
-                  </ul>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* FITA B (em cima) — Switzer (grotesco), maiúscula e bem espaçada,
-              peso leve, gira +7°, rola pra direita. */}
-          <div className="absolute left-1/2 top-1/2 z-[2] w-[200vw] -translate-x-1/2 -translate-y-1/2 rotate-[7deg]">
-            <div className="border-y border-white/10 bg-black py-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.8)] md:py-2">
-              <div className="flex w-max sd-marquee-track-rev">
-                {[0, 1].map((dup) => (
-                  <ul key={dup} className="flex shrink-0 items-center" aria-hidden={dup === 1}>
-                    {BRANDS.map((b) => (
-                      <li
-                        key={b}
-                        className="whitespace-nowrap px-8 font-switzer text-base font-light uppercase tracking-[0.28em] text-white md:px-12 md:text-2xl"
-                      >
-                        {b}
-                      </li>
-                    ))}
-                  </ul>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </section>
   );
 }

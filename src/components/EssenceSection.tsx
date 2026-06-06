@@ -59,7 +59,7 @@ const ESSENCE_FRAGMENT = /* glsl */ `
 /**
  * ESSÊNCIA — interlúdio emocional.
  *
- * Seção pinada: o vídeo do Efeit Festa brilha ao fundo (blur + bloom + glow
+ * Seção pinada: o vídeo de fundo brilha (blur + bloom + glow
  * rosa). Ao rolar, a "câmera afasta" — o vídeo começa ampliado e desfocado e
  * vai recuando e entrando em foco (dolly-out) — enquanto as frases se renovam,
  * uma de cada vez (sobem + fade).
@@ -163,7 +163,7 @@ export function EssenceSection() {
   return (
     <div ref={sectionRef} className="relative h-[420vh] bg-black">
       <div ref={pinRef} className="sticky top-0 h-screen w-full overflow-hidden bg-black">
-        {/* Vídeo Efeit Festa brilhando ao fundo */}
+        {/* Vídeo de fundo brilhando */}
         <video
           ref={videoRef}
           className="absolute inset-0 h-full w-full object-cover"
@@ -214,7 +214,6 @@ export function EssenceSection() {
         <div className="absolute bottom-8 left-6 z-20 flex items-center gap-3 font-display-tech text-[10px] uppercase tracking-widest text-white/50 md:left-10">
           <span>dolly out</span>
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-pink" />
-          <span className="text-white/70">efeit festa</span>
         </div>
       </div>
     </div>
