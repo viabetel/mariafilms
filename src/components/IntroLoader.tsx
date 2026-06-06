@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap, useGSAP } from '../lib/gsap';
-import { loadFrames, onFramesProgress } from '../lib/frames';
+import { loadFrames, onFramesProgress, FRAME_COUNT } from '../lib/frames';
 import { EASE, prefersReducedMotion } from '../lib/motion';
+
+// Revela o site após os primeiros frames (suficientes pra abertura da sequência
+// cinematográfica); o resto continua baixando em background. Antes o loader
+// travava até os 259 frames (~8 MB) terminarem = tela preta longa no 3G.
+const REVEAL_AT = Math.min(64, FRAME_COUNT);
 
 /**
  * Abertura editorial e sóbria: só o wordmark "maria films" e uma linha fina que
@@ -14,12 +19,14 @@ export function IntroLoader({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0);
   const [done, setDone] = useState(false);
 
-  // Dispara a pré-carga e escuta o progresso.
+  // Dispara a pré-carga e escuta o progresso. Revela ao atingir REVEAL_AT frames
+  // (não os 259); o restante segue carregando em background sem bloquear.
   useEffect(() => {
-    const off = onFramesProgress((loaded, total) => {
-      setProgress(loaded / total);
+    const off = onFramesProgress((loaded) => {
+      setProgress(Math.min(loaded / REVEAL_AT, 1));
+      if (loaded >= REVEAL_AT) setDone(true);
     });
-    loadFrames().then(() => setDone(true));
+    loadFrames();
     return off;
   }, []);
 

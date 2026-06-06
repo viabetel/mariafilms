@@ -48,16 +48,6 @@
     font-family: 'Sora', sans-serif;
   }
 
-  /* Tipografia premium da faixa de marcas (Fontshare, fora do Google):
-     Boska = serifa de alto contraste (masthead de moda); Switzer = grotesco
-     limpo. Caem nas do site se o Fontshare não responder. */
-  .font-boska {
-    font-family: 'Boska', 'Instrument Serif', Georgia, serif;
-  }
-  .font-switzer {
-    font-family: 'Switzer', 'Sora', sans-serif;
-  }
-
   .hero-title {
     font-family: 'Sora', sans-serif;
     letter-spacing: -0.06em;
