@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap';
 import { scrollToSection } from './SmoothScroll';
 import { EASE } from '../lib/motion';
+import { LogoMark } from './brand/Logo';
 
 const LINKS = [
   { label: 'filmes', target: '#filmes' },
@@ -74,7 +75,7 @@ export function Navbar() {
         onClick={() => go('body')}
         className="glass pointer-events-auto group flex items-center gap-2.5 rounded-full px-6 py-3"
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-pink shadow-[0_0_8px_#ff007f] transition-transform duration-300 group-hover:scale-125" />
+        <LogoMark tone="pink" className="h-5 w-auto shrink-0 drop-shadow-[0_0_8px_rgba(255,0,127,0.45)] transition-transform duration-300 group-hover:scale-110" />
         <span className="font-serif-editorial text-2xl italic lowercase leading-none tracking-tight md:text-[28px]">
           <span className="text-white">maria</span>
           <span className="text-pink"> films</span>
