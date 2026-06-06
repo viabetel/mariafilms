@@ -480,8 +480,22 @@ def _process_autentique_webhook(payload: dict) -> dict:
 @app.post("/api/webhooks/autentique")
 @limiter.limit("60/minute")
 async def autentique_webhook(request: Request):
-    payload = await _verified_payload(request, AUTENTIQUE_WEBHOOK_SECRET)
-    return _process_autentique_webhook(payload)
+    # A Autentique pode NÃO assinar o webhook com HMAC (depende do painel). Aqui o
+    # evento é só GATILHO: se vier assinatura, conferimos; se não vier, aceitamos —
+    # porque _process_autentique_webhook RE-CONSULTA a Autentique com o token do
+    # servidor (fonte da verdade) e só marca 'assinada' quando o documento fechou
+    # de fato. Um POST forjado, no máximo, dispara uma re-consulta (rate-limited);
+    # nunca marca algo como assinado sem a Autentique confirmar.
+    raw = await request.body()
+    sig = (
+        request.headers.get("x-autentique-signature")
+        or request.headers.get("x-signature")
+        or request.headers.get("x-hub-signature-256")
+        or ""
+    )
+    if sig and not security.verify_hmac(AUTENTIQUE_WEBHOOK_SECRET, raw, sig):
+        raise HTTPException(401, "assinatura de webhook inválida")
+    return _process_autentique_webhook(json.loads(raw or b"{}"))
 
 
 # ── POST /api/proposta/pagamento → cria a cobrança Pix/cartão da 1ª parcela ─
