@@ -16,7 +16,7 @@
 //   POST /api/proposta/pagamento   → Stripe Checkout Session (cobrar após assinar)
 //   webhooks Autentique/Stripe     → avançam o status no Supabase
 //   O navegador NUNCA fala com Autentique/Stripe direto (chaves no backend).
-import { PLANS, billingPlan, type Plan, type ChargeMethod } from './plans';
+import { PLANS, billingPlan, type Plan, type ChargeMethod, type ProposalSections, DEFAULT_SECTIONS, DEFAULT_FAQ, DEFAULT_INCLUSO, DEFAULT_CONDICOES } from './plans';
 
 // Base do backend FastAPI. Em dev aponta pro uvicorn local; em produção, defina
 // VITE_API_BASE no ambiente de build (domínio do backend).
@@ -126,6 +126,11 @@ export interface ProposalInfo {
   // link de assinatura (Autentique) persistido no servidor → restaura o iframe
   // quando o cliente recarrega na etapa de assinatura.
   contract?: { documentId?: string; signingUrl?: string | null };
+  // ── personalização visual ──────────────────────────────────────────────────
+  heroTitle?: string;
+  heroSubtitle?: string;
+  themeId?: string;
+  sections?: ProposalSections;
 }
 
 export interface ProposalSummary {
@@ -209,6 +214,11 @@ export interface ProposalContent {
   days: number;
   plans: Plan[];
   notes?: string; // anotação interna da Maria (não aparece pro cliente)
+  // ── personalização da proposta ────────────────────────────────────────────
+  heroTitle?: string;      // título customizado do hero (ex: "proposta exclusiva")
+  heroSubtitle?: string;   // subtítulo do hero
+  themeId?: string;        // id do tema de cores (THEMES)
+  sections?: ProposalSections; // configuração de visibilidade e conteúdo das seções
 }
 
 export interface StoredProposal extends ProposalContent {
@@ -270,6 +280,10 @@ function normalizeEntry(raw: Partial<StoredProposal> & { planIds?: string[] }): 
     days: typeof raw.days === 'number' ? raw.days : 7,
     plans,
     notes: raw.notes ?? '',
+    heroTitle: raw.heroTitle,
+    heroSubtitle: raw.heroSubtitle,
+    themeId: raw.themeId,
+    sections: raw.sections,
     status: raw.status ?? 'pendente',
     createdAt,
     archived: raw.archived ?? false,
@@ -332,6 +346,8 @@ export function defaultContent(): ProposalContent {
     days: 7,
     plans: PLANS.map((p) => ({ ...p, items: p.items.map((it) => ({ ...it })), schedule: p.schedule?.map((s) => ({ ...s })) })),
     notes: '',
+    themeId: 'pink',
+    sections: { ...DEFAULT_SECTIONS, faq: DEFAULT_FAQ.map((f) => ({ ...f })), incluso: DEFAULT_INCLUSO.map((i) => ({ ...i })), condicoes: { ...DEFAULT_CONDICOES } },
   };
 }
 
@@ -388,10 +404,10 @@ export async function updateProposal(token: string, content: ProposalContent): P
 export async function getStored(token: string): Promise<ProposalContent | undefined> {
   try {
     const e = (await adminFetch(`/api/admin/proposals/${token}`)) as StoredProposal;
-    return { clienteNome: e.clienteNome, intro: e.intro, days: e.days, plans: e.plans, notes: e.notes };
+    return { clienteNome: e.clienteNome, intro: e.intro, days: e.days, plans: e.plans, notes: e.notes, heroTitle: e.heroTitle, heroSubtitle: e.heroSubtitle, themeId: e.themeId, sections: e.sections };
   } catch {
     const e = readStore().find((x) => x.token === token);
-    return e && { clienteNome: e.clienteNome, intro: e.intro, days: e.days, plans: e.plans, notes: e.notes };
+    return e && { clienteNome: e.clienteNome, intro: e.intro, days: e.days, plans: e.plans, notes: e.notes, heroTitle: e.heroTitle, heroSubtitle: e.heroSubtitle, themeId: e.themeId, sections: e.sections };
   }
 }
 
@@ -415,6 +431,10 @@ export async function duplicateProposal(token: string): Promise<{ token: string;
       days: src.days,
       plans: src.plans.map((p) => ({ ...p, items: p.items.map((it) => ({ ...it })), schedule: p.schedule?.map((s) => ({ ...s })) })),
       notes: src.notes,
+      heroTitle: src.heroTitle,
+      heroSubtitle: src.heroSubtitle,
+      themeId: src.themeId,
+      sections: src.sections ? JSON.parse(JSON.stringify(src.sections)) : undefined,
     });
   }
 }
@@ -553,7 +573,7 @@ export async function getProposal(token: string | null): Promise<ProposalInfo | 
   // proposta NÃO existir no backend (ex.: preview efêmero) ou o backend estiver fora.
   if (key !== PREVIEW_TOKEN) {
     try {
-      const r = (await adminFetchPublicProposal(key)) as { clienteNome: string; intro?: string; plans?: Plan[]; status?: ProposalStatus; expiresAt?: string; blocked?: boolean; contract?: ProposalInfo['contract'] };
+      const r = (await adminFetchPublicProposal(key)) as { clienteNome: string; intro?: string; plans?: Plan[]; status?: ProposalStatus; expiresAt?: string; blocked?: boolean; contract?: ProposalInfo['contract']; heroTitle?: string; heroSubtitle?: string; themeId?: string; sections?: ProposalSections };
       if (r && Array.isArray(r.plans) && r.plans.length) {
         return {
           clienteNome: r.clienteNome,
@@ -563,6 +583,10 @@ export async function getProposal(token: string | null): Promise<ProposalInfo | 
           expiresAt: r.expiresAt ?? computeExpiry(nowIso(), 7),
           blocked: !!r.blocked,
           contract: r.contract, // link de assinatura p/ restaurar o iframe no reload
+          heroTitle: r.heroTitle,
+          heroSubtitle: r.heroSubtitle,
+          themeId: r.themeId,
+          sections: r.sections,
         };
       }
     } catch {
@@ -580,6 +604,10 @@ export async function getProposal(token: string | null): Promise<ProposalInfo | 
       status: effectiveStatus(st),
       expiresAt: computeExpiry(st.createdAt, st.days),
       blocked: !!st.archived, // arquivada = fora do ar pro cliente (encerrar/pausar)
+      heroTitle: st.heroTitle,
+      heroSubtitle: st.heroSubtitle,
+      themeId: st.themeId,
+      sections: st.sections,
     };
   }
   const cat = CATALOG[key];

@@ -69,7 +69,7 @@ export function Contact() {
   };
 
   const field =
-    'ct-fade w-full border-b border-white/15 bg-transparent py-4 font-display-tech text-lg text-white placeholder:text-neutral-600 outline-none transition-colors focus:border-pink';
+    'w-full border-b border-white/15 bg-transparent py-4 font-display-tech text-lg text-white placeholder:text-neutral-600 outline-none transition-colors focus:border-pink';
 
   return (
     <section
@@ -96,7 +96,7 @@ export function Contact() {
         </div>
 
         {/* Formulário */}
-        <form className="mx-auto mt-16 grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2" onSubmit={submit}>
+        <form className="ct-fade mx-auto mt-16 grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2" onSubmit={submit}>
           {/* honeypot anti-spam: invisível pra humanos, bots costumam preencher */}
           <input
             type="text"
@@ -133,7 +133,7 @@ export function Contact() {
           <button
             type="submit"
             disabled={status === 'sending' || status === 'ok'}
-            className="ct-fade mt-2 flex items-center justify-center rounded-full bg-pink py-5 font-display-tech text-sm font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:shadow-pink-glow disabled:opacity-70 md:col-span-2"
+            className="w-full mt-2 flex items-center justify-center rounded-full bg-pink py-5 font-display-tech text-sm font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:shadow-pink-glow disabled:opacity-70 md:col-span-2"
           >
             {status === 'sending' ? 'enviando…' : status === 'ok' ? 'recebido, retornamos em breve' : 'enviar briefing'}
           </button>

@@ -1,0 +1,199 @@
+/* AE LAB — estilos isolados da prova de conceito */
+.ae-lab {
+  --split: 0px;
+  position: fixed;
+  inset: 0;
+  background: #060606;
+  color: #fff;
+  overflow: hidden;
+  cursor: none;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* color grade que paira sobre tudo (mistura cinematográfica) */
+.ae-grade {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 80% at 70% 10%, rgba(255, 0, 127, 0.12), transparent 60%),
+    linear-gradient(180deg, rgba(10, 14, 30, 0.25), rgba(0, 0, 0, 0.35));
+  mix-blend-mode: screen;
+  z-index: 40;
+}
+
+/* vinheta + grão reaproveitam .film-grain .vignette globais; reforço aqui */
+.ae-lab::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.6) 100%);
+  z-index: 41;
+}
+
+/* HUD de timecode */
+.ae-hud {
+  position: fixed;
+  top: 26px;
+  right: 30px;
+  z-index: 50;
+  font-family: 'Sora', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ae-rec {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff007f;
+  box-shadow: 0 0 12px #ff007f;
+  animation: ae-blink 1.1s steps(1) infinite;
+}
+.ae-tc {
+  margin-left: 6px;
+  color: #fff;
+}
+@keyframes ae-blink { 50% { opacity: 0.2; } }
+
+/* cursor-lente */
+.ae-lens {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px;
+  height: 220px;
+  margin: -110px 0 0 -110px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 45;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.08), 0 0 0 1px rgba(255, 0, 127, 0.25);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 60%);
+  backdrop-filter: saturate(1.25) contrast(1.05);
+}
+.ae-lens::before,
+.ae-lens::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.35);
+}
+.ae-lens::before { left: 50%; top: 42%; width: 1px; height: 16%; }
+.ae-lens::after { top: 50%; left: 42%; height: 1px; width: 16%; }
+
+/* flare anamórfico horizontal */
+.ae-flare {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 2px;
+  margin-top: -1px;
+  transform-origin: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 44;
+  background: linear-gradient(90deg, transparent, rgba(140, 200, 255, 0.9), rgba(255, 255, 255, 0.95), rgba(140, 200, 255, 0.9), transparent);
+  filter: blur(1px);
+}
+
+/* overlay da transição (a íris que vira o fundo) */
+.ae-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 38;
+}
+
+/* cena */
+.ae-scene {
+  position: relative;
+  z-index: 10;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 9vw;
+  gap: 30px;
+}
+.ae-scene2 { /* a cena 2 herda o rosa que veio do botão */
+  background: linear-gradient(160deg, #1a0010 0%, #060606 70%);
+}
+.ae-kicker {
+  font-family: 'Sora', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 8px;
+  font-size: 14px;
+  color: #ff007f;
+}
+.ae-h1 {
+  font-family: 'Instrument Serif', serif;
+  font-weight: 400;
+  font-size: clamp(48px, 9vw, 132px);
+  line-height: 0.92;
+  margin: 0;
+  text-shadow: var(--split) 0 rgba(255, 0, 127, 0.6), calc(var(--split) * -1) 0 rgba(0, 200, 255, 0.6);
+}
+.ae-h1 em { font-style: italic; color: #ff007f; }
+
+.ae-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.ae-foc {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(16px, 1.6vw, 22px);
+  letter-spacing: 1px;
+  padding: 16px 26px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  will-change: filter, opacity;
+}
+
+.ae-cta {
+  align-self: flex-start;
+  margin-top: 14px;
+  padding: 20px 40px;
+  border: none;
+  border-radius: 100px;
+  background: #ff007f;
+  color: #fff;
+  font-family: 'Sora', sans-serif;
+  font-size: 18px;
+  letter-spacing: 1px;
+  cursor: none;
+  box-shadow: 0 18px 50px rgba(255, 0, 127, 0.4);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s;
+}
+.ae-cta:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 26px 70px rgba(255, 0, 127, 0.55); }
+.ae-cta--ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: none;
+  color: #fff;
+}
+
+.ae-hint {
+  position: fixed;
+  bottom: 26px;
+  left: 9vw;
+  font-family: 'Sora', sans-serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: lowercase;
+  color: rgba(255, 255, 255, 0.4);
+  z-index: 50;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ae-lab { cursor: auto; }
+  .ae-lens, .ae-flare { display: none; }
+}

@@ -171,6 +171,10 @@ async def get_proposta(token: str):
         # recarrega a página na etapa de assinatura. Sem isso, o reload perdia o
         # quadro e caía no "modo demonstração".
         "contract": content.get("contract"),
+        "heroTitle": content.get("heroTitle", ""),
+        "heroSubtitle": content.get("heroSubtitle", ""),
+        "themeId": content.get("themeId", "pink"),
+        "sections": content.get("sections", {}),
     }
 
 

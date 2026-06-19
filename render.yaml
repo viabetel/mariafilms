@@ -36,6 +36,6 @@ services:
         sync: false
       - key: GATEWAY_WEBHOOK_SECRET
         sync: false
-      # ── CORS: domínio do site na Vercel (sem barra no fim), separado por vírgula ──
+      # ── CORS: domínio do site (sem barra no fim), separado por vírgula ──
       - key: CORS_ORIGINS
-        sync: false                 # ex.: https://mariafilms.vercel.app
+        sync: false                 # prod: https://mariafilms.com.br,https://www.mariafilms.com.br

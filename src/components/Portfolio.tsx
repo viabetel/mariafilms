@@ -19,12 +19,24 @@ interface Film {
   desc: string;
   media: string;
   video?: boolean;
+  videoWebm?: string;
+  videoMp4?: string;
 }
 
 // PLACEHOLDER de mídia: reusa fotos existentes até a Maria enviar as reais de
 // cada trabalho. Trocar `media` (e ligar `video`) quando os arquivos chegarem.
 const FILMS: Film[] = [
-  { index: '01', title: 'aniversário de 15 anos', category: 'evento · 15 anos', role: 'videomaker + storymaker', desc: 'o grande dia em filme, do primeiro retoque ao último brinde.', media: '/maria/work-veste.jpg' },
+  {
+    index: '01',
+    title: 'aniversário de 15 anos',
+    category: 'evento · 15 anos',
+    role: 'videomaker + storymaker',
+    desc: 'o grande dia em filme, do primeiro retoque ao último brinde.',
+    media: '/maria/15-anos-capa.jpg',
+    video: true,
+    videoWebm: '/maria/15-anos.webm',
+    videoMp4: '/maria/15-anos.mp4',
+  },
   { index: '02', title: 'loja cristã', category: 'marca · ensaio', role: 'direção de cena + edição', desc: 'vídeos profissionais e direção de cena para a loja.', media: '/maria/work-raso.jpg' },
   { index: '03', title: 'aniversário infantil', category: 'evento · infantil', role: 'vídeo + foto', desc: 'a festa registrada em vídeo e foto, do jeito que a memória pede.', media: '/maria/work-brasil.jpg' },
 ];
@@ -46,8 +58,6 @@ function Panel({ film }: { film: Film }) {
         {/* mídia */}
         <div
           className="tw-imgwrap group relative mx-auto aspect-[4/5] w-full max-w-[78vw] overflow-hidden rounded-2xl ring-1 ring-white/10 sm:max-w-sm md:aspect-[3/4] md:max-w-none"
-          onMouseEnter={() => videoRef.current?.play().catch(() => {})}
-          onMouseLeave={() => videoRef.current?.pause()}
         >
           <img
             src={film.media}
@@ -58,9 +68,9 @@ function Panel({ film }: { film: Film }) {
             style={{ filter: 'grayscale(0.35) contrast(1.05) brightness(0.82)' }}
           />
           {film.video && (
-            <video ref={videoRef} className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100" muted loop playsInline preload="none">
-              <source src="/reel.webm" type="video/webm" />
-              <source src="/reel.mp4" type="video/mp4" />
+            <video ref={videoRef} className="pointer-events-none absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline preload="auto">
+              <source src={film.videoWebm || "/reel.webm"} type="video/webm" />
+              <source src={film.videoMp4 || "/reel.mp4"} type="video/mp4" />
             </video>
           )}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />

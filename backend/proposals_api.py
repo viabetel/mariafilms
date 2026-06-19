@@ -110,6 +110,10 @@ def create_proposal(body: dict = Body(...), x_admin_token: str = Header(None)):
         "days": days,
         "plans": c.get("plans", []),
         "notes": c.get("notes", ""),
+        "heroTitle": c.get("heroTitle", ""),
+        "heroSubtitle": c.get("heroSubtitle", ""),
+        "themeId": c.get("themeId", "pink"),
+        "sections": c.get("sections", {}),
         "status": "pendente",
         "createdAt": created,
         "archived": False,
@@ -147,7 +151,7 @@ def update_proposal(token: str, body: dict = Body(...), x_admin_token: str = Hea
     _require_admin(x_admin_token)
     stored = _load(token)
     c = body.get("content") or {}
-    for k in ("clienteNome", "intro", "days", "plans", "notes"):
+    for k in ("clienteNome", "intro", "days", "plans", "notes", "heroTitle", "heroSubtitle", "themeId", "sections"):
         if k in c:
             stored[k] = c[k]
     _push_event(stored, "edited")
@@ -213,7 +217,19 @@ def duplicate_proposal(token: str, x_admin_token: str = Header(None)):
     src = _load(token)
     name = (src.get("clienteNome") or "") and f"{src['clienteNome']} (cópia)"
     return create_proposal(
-        body={"content": {"clienteNome": name, "intro": src.get("intro", ""), "days": src.get("days", DEFAULT_DAYS), "plans": src.get("plans", []), "notes": src.get("notes", "")}},
+        body={
+            "content": {
+                "clienteNome": name,
+                "intro": src.get("intro", ""),
+                "days": src.get("days", DEFAULT_DAYS),
+                "plans": src.get("plans", []),
+                "notes": src.get("notes", ""),
+                "heroTitle": src.get("heroTitle", ""),
+                "heroSubtitle": src.get("heroSubtitle", ""),
+                "themeId": src.get("themeId", "pink"),
+                "sections": src.get("sections", {}),
+            }
+        },
         x_admin_token=x_admin_token,
     )
 

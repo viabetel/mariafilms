@@ -1,0 +1,20 @@
+import puppeteer from 'puppeteer-core';
+const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const OUT = 'scripts/shots';
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--hide-scrollbars'] });
+const page = await browser.newPage();
+await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+await page.goto('http://localhost:5173/', { waitUntil: 'networkidle2', timeout: 60000 });
+await sleep(6500);
+const shot = async (sel, name) => {
+  await page.evaluate((s) => { const e = document.querySelector(s); if (e) e.scrollIntoView({ block: 'center' }); }, sel);
+  await sleep(900);
+  await page.screenshot({ path: `${OUT}/${name}.png` });
+  console.log('shot', name);
+};
+await shot('#contato', 'txt-contato');
+await shot('#servicos', 'txt-servicos');
+await shot('#sobre', 'txt-sobre');
+await browser.close();

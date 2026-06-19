@@ -2,7 +2,7 @@
 // Singleton de módulo: tanto o IntroLoader (barra de progresso real) quanto o
 // CinematicAct (renderização) consomem as MESMAS imagens, carregadas uma vez.
 
-export const FRAME_COUNT = 259;
+export const FRAME_COUNT = 130;
 
 const framePath = (i: number) =>
   `/frames/frame_${String(i + 1).padStart(3, '0')}.webp`;

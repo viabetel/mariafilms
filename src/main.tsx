@@ -9,6 +9,8 @@ import App from './App.tsx'
 const path = window.location.pathname.replace(/\/+$/, '');
 const isProposal = path.endsWith('/proposta');
 const isAdmin = path.endsWith('/admin');
+// Lab de motion (prova de conceito AE) — só na hash #ae-lab, não pesa o site.
+const isLab = window.location.hash === '#ae-lab';
 
 // Fraunces só é usada nas telas de proposta/admin (.proposal-doc). Carregamos
 // a fonte apenas nessas rotas — o site principal não baixa essa família à toa.
@@ -29,10 +31,17 @@ const AdminPanel = lazy(() =>
 const AdminGate = lazy(() =>
   import('./proposal/AdminGate.tsx').then((m) => ({ default: m.AdminGate })),
 );
+const AeLab = lazy(() =>
+  import('./lab/AeLab.tsx').then((m) => ({ default: m.AeLab })),
+);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isProposal ? (
+    {isLab ? (
+      <Suspense fallback={<div style={{ background: '#060606', height: '100vh' }} />}>
+        <AeLab />
+      </Suspense>
+    ) : isProposal ? (
       <Suspense fallback={<div style={{ background: '#f4f1ea', height: '100vh' }} />}>
         <ProposalDossier />
       </Suspense>

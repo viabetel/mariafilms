@@ -44,32 +44,11 @@ const CHAPTERS: Chapter[] = [
     body: 'traduzimos conceito em tela: direção de elenco e orquestração de toda a equipe no set.',
     lens: '50mm f/1.2',
   },
-  {
-    index: '04',
-    kicker: 'luz',
-    title: 'fotografia',
-    body: 'esculpimos ambientes com iluminação precisa e composição geométrica de textura orgânica.',
-    lens: '50mm f/1.2',
-  },
-  {
-    index: '05',
-    kicker: 'montagem',
-    title: 'ritmo e corte',
-    body: 'onde o filme nasce de verdade. costuramos as cenas com precisão cirúrgica para ditar o tempo.',
-    lens: '85mm f/1.4',
-  },
-  {
-    index: '06',
-    kicker: 'execução',
-    title: 'pós-produção',
-    body: 'color grading meticuloso e sound design imersivo. lapidamos o bruto em peça final.',
-    lens: '85mm f/1.4',
-  },
 ];
 
 // Posições (0..1) na timeline scrubada onde cada capítulo do manifesto entra.
-const CHAPTER_STARTS = [0.16, 0.3, 0.44, 0.58, 0.72, 0.86];
-const HOLD = 0.1; // quanto cada capítulo permanece antes de sair
+const CHAPTER_STARTS = [0.25, 0.50, 0.75];
+const HOLD = 0.12; // quanto cada capítulo permanece antes de sair
 
 // Janela de revelação do texto (em progresso). O reveal por caractere PRECISA
 // caber aqui dentro, senão a frase aparece pela metade no ponto de descanso.
@@ -79,7 +58,7 @@ const REVEAL_STAGGER = 0.0013; // ~18 chars → total ≈ 0.044 (< janela visív
 // Pontos de "descanso" do snap: hero (0) + o centro do "hold" de cada capítulo,
 // já depois do texto estar 100% revelado. Ao parar de rolar, o scroll desliza
 // sozinho para o mais próximo.
-const SNAP_POINTS = [0, ...CHAPTER_STARTS.map((s) => s + 0.065)];
+const SNAP_POINTS = [0, ...CHAPTER_STARTS.map((s) => s + 0.06)];
 
 export function CinematicAct() {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -447,7 +426,7 @@ export function CinematicAct() {
           <div className="relative h-[2px] w-28 overflow-hidden rounded-full bg-neutral-800">
             <div ref={barRef} className="absolute inset-0 origin-left scale-x-0 bg-pink" />
           </div>
-          <span className="font-display-tech text-[10px] tracking-wider text-neutral-500">06</span>
+          <span className="font-display-tech text-[10px] tracking-wider text-neutral-500">03</span>
           <span ref={pctRef} className="ml-1 font-display-tech text-[10px] tracking-widest text-neutral-400">0%</span>
         </div>
       </div>

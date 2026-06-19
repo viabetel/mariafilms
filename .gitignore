@@ -76,3 +76,29 @@ Desktop.ini
 # Ignorar frames em formato JPG original (mantendo os frames WebP otimizados)
 /public/frames/*.jpg
 
+# Pastas de rascunhos locais e temporários
+/scratch/
+
+# Backups e arquivos pesados locais (não sobem para o Git/produção)
+/opus.zip
+/MAria Fotos/
+/frames_4k_backup/
+/mobile_shots/
+/remotion/
+/docs-motion/
+/.claude/
+
+# Python cache & virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+ENV/
+env/
+
+# PDFs gerados localmente
+*.pdf
+

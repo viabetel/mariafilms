@@ -17,7 +17,7 @@ import { EASE, prefersReducedMotion } from '../lib/motion';
  */
 
 const REELS = [
-  { img: '/maria/work-veste.jpg', views: '4 mil', tag: 'se veste' },
+  { img: '/maria/work-veste.jpg', views: '4 mil', tag: 'linhas de amor' },
   { img: '/maria/work-raso.jpg', views: '5 mil', tag: 'o raso' },
   { img: '/maria/work-brasil.jpg', views: '500 mil', tag: 'brasil' },
 ];
