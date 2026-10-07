@@ -91,6 +91,8 @@ class ContratoIn(BaseModel):
     nome: str = Field(min_length=2, max_length=120)
     documento: str = Field(min_length=11, max_length=20)
     email: EmailStr
+    # endereço físico do contratante: vai na qualificação do contrato (pedido da advogada)
+    endereco: str = Field(default="", max_length=300)
 
     @field_validator("documento")
     @classmethod
@@ -615,7 +617,7 @@ def render_contract_pdf(contract_plan, body: ContratoIn) -> bytes:
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "propostas"))
     from build_contract import contract_pdf_bytes  # import tardio: WeasyPrint precisa Pango/Cairo
 
-    signer = {"nome": body.nome, "documento": body.documento, "email": body.email}
+    signer = {"nome": body.nome, "documento": body.documento, "email": body.email, "endereco": body.endereco}
     # contract_plan vem do endpoint: um DICT moldado pela versão real da proposta
     # (inclusive custom/editada), ou a STRING do planId (modo sem-DB → catálogo
     # padrão). build_contract aceita os dois.

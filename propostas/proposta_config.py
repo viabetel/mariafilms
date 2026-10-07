@@ -11,6 +11,9 @@ CONTRACTOR = {
     "doc": "CPF 124.270.116-81",
     "marca": "maria films",
     "cidade": "Juiz de Fora/MG",
+    # endereço completo (rua, número, bairro, cidade/UF, CEP), pedido da advogada.
+    # Vazio = o contrato mostra só a cidade.
+    "endereco": "",
 }
 
 CONTACT = {
